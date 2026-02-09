@@ -9,6 +9,14 @@ import {
   listGameAccounts,
   updateGameAccount,
 } from '../../services/gameVaultGateway';
+import {
+  changeVaultPassword,
+  clearVaultToken,
+  getVaultToken,
+  loginVault,
+  setVaultToken,
+  verifyVaultSession,
+} from '../../services/vaultAuthGateway';
 
 const props = defineProps<{
   siteName: string;
@@ -24,6 +32,23 @@ const formMode = ref<'create' | 'edit'>('create');
 const visibleMap = reactive<Record<string, boolean>>({});
 const copiedMap = reactive<Record<string, string>>({});
 const loading = ref(false);
+
+const authReady = ref(false);
+const authorized = ref(false);
+const authLoading = ref(false);
+const authError = ref('');
+const showPasswordModal = ref(false);
+const passwordSaving = ref(false);
+const passwordError = ref('');
+const passwordForm = reactive({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+});
+const authForm = reactive({
+  username: 'admin',
+  password: '',
+});
 
 const formState = reactive<GameVaultItem>({
   id: '',
@@ -75,8 +100,15 @@ async function loadAccounts() {
   try {
     const data = await listGameAccounts();
     vaultItems.value = data.length ? data : [...props.records];
-  } catch {
-    vaultItems.value = [...props.records];
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    if (message.includes('401')) {
+      authorized.value = false;
+      clearVaultToken();
+      vaultItems.value = [];
+    } else {
+      vaultItems.value = [...props.records];
+    }
   } finally {
     loading.value = false;
   }
@@ -167,8 +199,87 @@ async function saveForm() {
   showForm.value = false;
 }
 
+async function checkSession() {
+  const token = getVaultToken();
+  if (!token) {
+    authorized.value = false;
+    authReady.value = true;
+    return;
+  }
+
+  try {
+    await verifyVaultSession(token);
+    authorized.value = true;
+    await loadAccounts();
+  } catch {
+    clearVaultToken();
+    authorized.value = false;
+  } finally {
+    authReady.value = true;
+  }
+}
+
+async function doLogin() {
+  if (!authForm.username || !authForm.password) {
+    authError.value = '请输入用户名和密码';
+    return;
+  }
+
+  authLoading.value = true;
+  authError.value = '';
+  try {
+    const data = await loginVault(authForm.username, authForm.password);
+    setVaultToken(data.token);
+    authorized.value = true;
+    authForm.password = '';
+    await loadAccounts();
+  } catch {
+    authError.value = '登录失败，请检查凭据';
+  } finally {
+    authLoading.value = false;
+    authReady.value = true;
+  }
+}
+
+function logout() {
+  clearVaultToken();
+  authorized.value = false;
+  vaultItems.value = [];
+  selectedId.value = '';
+}
+
+async function submitPasswordChange() {
+  if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+    passwordError.value = '请填写完整密码字段';
+    return;
+  }
+  if (passwordForm.newPassword.length < 8) {
+    passwordError.value = '新密码至少 8 位';
+    return;
+  }
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    passwordError.value = '两次输入的新密码不一致';
+    return;
+  }
+
+  passwordSaving.value = true;
+  passwordError.value = '';
+  try {
+    await changeVaultPassword(passwordForm.currentPassword, passwordForm.newPassword);
+    showPasswordModal.value = false;
+    passwordForm.currentPassword = '';
+    passwordForm.newPassword = '';
+    passwordForm.confirmPassword = '';
+    window.alert('管理员密码修改成功');
+  } catch {
+    passwordError.value = '修改失败，请检查当前密码';
+  } finally {
+    passwordSaving.value = false;
+  }
+}
+
 onMounted(() => {
-  loadAccounts();
+  checkSession();
 });
 
 watch(
@@ -189,7 +300,29 @@ watch(
 <template>
   <div>
     <SiteHeader :site-name="siteName" active-path="/games" />
-    <main class="games-main">
+
+    <main v-if="authReady && !authorized" class="auth-main">
+      <section class="auth-card">
+        <p class="kicker">PRIVATE VAULT</p>
+        <h1>游戏仓已加密保护</h1>
+        <p>该页面包含账号和密码信息，请输入管理员凭据后访问。</p>
+        <div class="auth-form">
+          <input v-model="authForm.username" type="text" placeholder="用户名" />
+          <input
+            v-model="authForm.password"
+            type="password"
+            placeholder="密码"
+            @keydown.enter="doLogin"
+          />
+          <button type="button" :disabled="authLoading" @click="doLogin">
+            {{ authLoading ? '登录中...' : '进入游戏仓' }}
+          </button>
+        </div>
+        <p v-if="authError" class="auth-error">{{ authError }}</p>
+      </section>
+    </main>
+
+    <main v-else class="games-main">
       <section class="hero reveal">
         <p class="kicker">GAME OPS CENTER</p>
         <h1>游戏仓控制台</h1>
@@ -199,6 +332,8 @@ watch(
           <p>游戏 {{ stats.totalGames }}</p>
           <p>当前 {{ stats.shown }}</p>
           <p v-if="loading">同步中...</p>
+          <button type="button" @click="showPasswordModal = true">修改管理员密码</button>
+          <button class="logout-btn" type="button" @click="logout">退出登录</button>
         </div>
       </section>
 
@@ -294,6 +429,33 @@ watch(
       </section>
     </main>
 
+    <div v-if="showPasswordModal" class="modal-backdrop" @click.self="showPasswordModal = false">
+      <section class="modal password-modal">
+        <h2>修改管理员密码</h2>
+        <div class="form-grid single">
+          <label>
+            当前密码
+            <input v-model="passwordForm.currentPassword" type="password" placeholder="输入当前密码" />
+          </label>
+          <label>
+            新密码
+            <input v-model="passwordForm.newPassword" type="password" placeholder="至少 8 位" />
+          </label>
+          <label>
+            确认新密码
+            <input v-model="passwordForm.confirmPassword" type="password" placeholder="再次输入新密码" />
+          </label>
+        </div>
+        <p v-if="passwordError" class="auth-error">{{ passwordError }}</p>
+        <div class="modal-actions">
+          <button type="button" @click="showPasswordModal = false">取消</button>
+          <button class="add-btn" type="button" :disabled="passwordSaving" @click="submitPasswordChange">
+            {{ passwordSaving ? '提交中...' : '确认修改' }}
+          </button>
+        </div>
+      </section>
+    </div>
+
     <div v-if="showForm" class="modal-backdrop" @click.self="showForm = false">
       <section class="modal">
         <h2>{{ formMode === 'create' ? '新增账号记录' : '编辑账号记录' }}</h2>
@@ -339,9 +501,33 @@ watch(
 </template>
 
 <style scoped>
+.auth-main,
 .games-main {
   width: min(1240px, calc(100% - 2rem));
   margin: 1.35rem auto 0;
+}
+
+.auth-card {
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  padding: 1.1rem;
+  display: grid;
+  gap: 0.7rem;
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.auth-error {
+  color: #c2344c;
+}
+
+.games-main {
   display: grid;
   gap: 1rem;
 }
@@ -385,6 +571,7 @@ h1 {
   display: flex;
   gap: 0.45rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .stats-row p {
@@ -394,6 +581,10 @@ h1 {
   padding: 0.28rem 0.56rem;
   color: var(--ink-subtle);
   font-size: 0.84rem;
+}
+
+.logout-btn {
+  margin-left: auto;
 }
 
 .toolbar {
@@ -409,7 +600,7 @@ button {
   font: inherit;
 }
 
-.toolbar input,
+input,
 .modal input,
 .modal textarea {
   min-height: 2.3rem;
@@ -642,6 +833,10 @@ button:hover {
   gap: 0.8rem;
 }
 
+.password-modal {
+  width: min(520px, calc(100% - 2rem));
+}
+
 .modal h2 {
   margin: 0;
   font-family: var(--font-display);
@@ -662,6 +857,10 @@ button:hover {
 
 .form-grid label.full {
   grid-column: 1 / -1;
+}
+
+.form-grid.single {
+  grid-template-columns: 1fr;
 }
 
 .modal-actions {

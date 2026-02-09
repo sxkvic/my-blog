@@ -1,6 +1,9 @@
+import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
 import morgan from 'morgan';
+import { requireVaultAuth } from './auth.js';
+import authRouter from './auth.routes.js';
 import { initDb } from './db.js';
 import gameAccountsRouter from './gameAccounts.routes.js';
 import postsRouter from './posts.routes.js';
@@ -19,8 +22,9 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'neon-blog-api', db: 'sqlite' });
 });
 
+app.use('/api/auth', authRouter);
 app.use('/api/posts', postsRouter);
-app.use('/api/game-accounts', gameAccountsRouter);
+app.use('/api/game-accounts', requireVaultAuth, gameAccountsRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Not Found' });

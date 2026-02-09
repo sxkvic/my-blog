@@ -2,11 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
+import { hashPassword, verifyPassword } from './password.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DB_FILE = process.env.DB_FILE || path.resolve(__dirname, '../data/app.db');
 const LEGACY_JSON = path.resolve(__dirname, '../data/db.json');
+const DEFAULT_ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-me-now';
 
 const db = new Database(DB_FILE);
 
@@ -156,7 +159,22 @@ export function initDb() {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS admin_auth (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      username TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
+
+  const adminRow = db.prepare('SELECT id FROM admin_auth WHERE id = 1').get();
+  if (!adminRow) {
+    db.prepare(`
+      INSERT INTO admin_auth (id, username, password_hash, updated_at)
+      VALUES (1, ?, ?, datetime('now'))
+    `).run(DEFAULT_ADMIN_USER, hashPassword(DEFAULT_ADMIN_PASSWORD));
+  }
 
   migrateFromLegacyJson();
 }
@@ -317,4 +335,30 @@ export function updateGameAccount(id, payload) {
 export function deleteGameAccount(id) {
   const result = db.prepare('DELETE FROM game_accounts WHERE id = ?').run(id);
   return result.changes > 0;
+}
+
+export function verifyAdminCredentials(username, password) {
+  const row = db.prepare('SELECT username, password_hash FROM admin_auth WHERE id = 1').get();
+  if (!row || row.username !== username) {
+    return false;
+  }
+  return verifyPassword(password, row.password_hash);
+}
+
+export function updateAdminPassword(username, currentPassword, nextPassword) {
+  const row = db.prepare('SELECT username, password_hash FROM admin_auth WHERE id = 1').get();
+  if (!row || row.username !== username) {
+    return { ok: false, reason: 'user_not_found' };
+  }
+  if (!verifyPassword(currentPassword, row.password_hash)) {
+    return { ok: false, reason: 'invalid_current_password' };
+  }
+
+  db.prepare(`
+    UPDATE admin_auth
+    SET password_hash = ?, updated_at = datetime('now')
+    WHERE id = 1
+  `).run(hashPassword(nextPassword));
+
+  return { ok: true };
 }

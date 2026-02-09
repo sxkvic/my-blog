@@ -29,6 +29,8 @@ npm run dev
 ## API 概览
 
 - `GET /api/health`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 - `GET /api/posts`
 - `POST /api/posts`
 - `PUT /api/posts/:slug`
@@ -84,3 +86,19 @@ sudo systemctl reload nginx
 - 你不需要安装 MySQL，也不需要单独配置数据库服务。
 
 后续如果你要升级到 MySQL/PostgreSQL，主要替换点是 `server/src/db.js`。
+
+## 游戏仓鉴权
+
+游戏仓接口已启用鉴权，必须先登录获取 token 才能访问：
+
+- 受保护接口：`/api/game-accounts/*`
+- 登录接口：`POST /api/auth/login`
+
+请在部署前设置以下环境变量（不要使用默认值）：
+
+- `ADMIN_USER`
+- `ADMIN_PASSWORD`
+- `JWT_SECRET`
+
+管理员密码支持在游戏仓页面内修改（已登录后点击“修改管理员密码”）。
+首次管理员账户由环境变量初始化，仅在 `admin_auth` 表为空时生效。
