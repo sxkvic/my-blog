@@ -10,7 +10,6 @@ import {
   updateGameAccount,
 } from '../../services/gameVaultGateway';
 import {
-  changeVaultPassword,
   clearVaultToken,
   getVaultToken,
   setAuthUser,
@@ -37,14 +36,6 @@ const authReady = ref(false);
 const authorized = ref(false);
 const authLoading = ref(false);
 const authError = ref('');
-const showPasswordModal = ref(false);
-const passwordSaving = ref(false);
-const passwordError = ref('');
-const passwordForm = reactive({
-  currentPassword: '',
-  newPassword: '',
-  confirmPassword: '',
-});
 const authForm = reactive({
   username: 'admin',
   password: '',
@@ -229,42 +220,6 @@ async function doLogin() {
   }
 }
 
-function logout() {
-  clearVaultToken();
-  authorized.value = false;
-  vaultItems.value = [];
-}
-
-async function submitPasswordChange() {
-  if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-    passwordError.value = '请填写完整密码字段';
-    return;
-  }
-  if (passwordForm.newPassword.length < 8) {
-    passwordError.value = '新密码至少 8 位';
-    return;
-  }
-  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-    passwordError.value = '两次输入的新密码不一致';
-    return;
-  }
-
-  passwordSaving.value = true;
-  passwordError.value = '';
-  try {
-    await changeVaultPassword(passwordForm.currentPassword, passwordForm.newPassword);
-    showPasswordModal.value = false;
-    passwordForm.currentPassword = '';
-    passwordForm.newPassword = '';
-    passwordForm.confirmPassword = '';
-    window.alert('管理员密码修改成功');
-  } catch {
-    passwordError.value = '修改失败，请检查当前密码';
-  } finally {
-    passwordSaving.value = false;
-  }
-}
-
 onMounted(() => {
   checkSession();
 });
@@ -304,8 +259,6 @@ onMounted(() => {
           <p>游戏 {{ stats.totalGames }}</p>
           <p>当前 {{ stats.shown }}</p>
           <p v-if="loading">同步中...</p>
-          <button type="button" @click="showPasswordModal = true">修改管理员密码</button>
-          <button class="logout-btn" type="button" @click="logout">退出登录</button>
         </div>
       </section>
 
@@ -373,33 +326,6 @@ onMounted(() => {
         </section>
       </section>
     </main>
-
-    <div v-if="showPasswordModal" class="modal-backdrop" @click.self="showPasswordModal = false">
-      <section class="modal password-modal">
-        <h2>修改管理员密码</h2>
-        <div class="form-grid single">
-          <label>
-            当前密码
-            <input v-model="passwordForm.currentPassword" type="password" placeholder="输入当前密码" />
-          </label>
-          <label>
-            新密码
-            <input v-model="passwordForm.newPassword" type="password" placeholder="至少 8 位" />
-          </label>
-          <label>
-            确认新密码
-            <input v-model="passwordForm.confirmPassword" type="password" placeholder="再次输入新密码" />
-          </label>
-        </div>
-        <p v-if="passwordError" class="auth-error">{{ passwordError }}</p>
-        <div class="modal-actions">
-          <button type="button" @click="showPasswordModal = false">取消</button>
-          <button class="add-btn" type="button" :disabled="passwordSaving" @click="submitPasswordChange">
-            {{ passwordSaving ? '提交中...' : '确认修改' }}
-          </button>
-        </div>
-      </section>
-    </div>
 
     <div v-if="showForm" class="modal-backdrop" @click.self="showForm = false">
       <section class="modal">
@@ -526,10 +452,6 @@ h1 {
   padding: 0.28rem 0.56rem;
   color: var(--ink-subtle);
   font-size: 0.84rem;
-}
-
-.logout-btn {
-  margin-left: auto;
 }
 
 .toolbar {
@@ -741,10 +663,6 @@ button:hover {
   gap: 0.8rem;
 }
 
-.password-modal {
-  width: min(520px, calc(100% - 2rem));
-}
-
 .modal h2 {
   margin: 0;
   font-family: var(--font-display);
@@ -765,10 +683,6 @@ button:hover {
 
 .form-grid label.full {
   grid-column: 1 / -1;
-}
-
-.form-grid.single {
-  grid-template-columns: 1fr;
 }
 
 .modal-actions {
