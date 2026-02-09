@@ -8,7 +8,13 @@ import {
   type BlogPost,
   type Channel,
 } from '../data/blog';
-import { createUserPost, listUserPosts, type PostDraft } from '../services/postGateway';
+import {
+  createUserPost,
+  deleteUserPost,
+  listUserPosts,
+  type PostDraft,
+  updateUserPost,
+} from '../services/postGateway';
 
 const initialized = ref(false);
 const userPosts = ref<BlogPost[]>([]);
@@ -62,6 +68,17 @@ async function publishPost(draft: PostDraft) {
   return created;
 }
 
+async function savePost(slug: string, payload: Partial<BlogPost>) {
+  const updated = await updateUserPost(slug, payload);
+  userPosts.value = userPosts.value.map((item) => (item.slug === slug ? updated : item));
+  return updated;
+}
+
+async function removePost(slug: string) {
+  await deleteUserPost(slug);
+  userPosts.value = userPosts.value.filter((item) => item.slug !== slug);
+}
+
 init();
 
 export function useBlog() {
@@ -75,6 +92,8 @@ export function useBlog() {
     getPostBySlug,
     getRelatedPosts,
     publishPost,
+    savePost,
+    removePost,
     siteData,
     authors,
     gameAccounts,

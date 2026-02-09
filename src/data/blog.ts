@@ -28,6 +28,7 @@ export interface BlogPost {
   views: number;
   media?: PostMedia[];
   createdByUser?: boolean;
+  ownerUserId?: number;
 }
 
 export interface GameVaultItem {

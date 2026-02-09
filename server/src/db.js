@@ -40,6 +40,7 @@ function mapPost(row) {
     content: parseArray(row.content_json),
     media: parseArray(row.media_json),
     createdByUser: Boolean(row.created_by_user),
+    ownerUserId: row.owner_user_id == null ? undefined : Number(row.owner_user_id),
   };
 }
 
@@ -183,6 +184,23 @@ function migrateFromLegacyJson(adminUserId) {
   }
 }
 
+function reconcilePostOwners(adminUserId) {
+  db.prepare(`
+    UPDATE posts
+    SET owner_user_id = (
+      SELECT id FROM users WHERE users.username = posts.author_id
+    )
+    WHERE created_by_user = 1
+      AND EXISTS (
+        SELECT 1 FROM users WHERE users.username = posts.author_id
+      )
+      AND (
+        owner_user_id IS NULL
+        OR owner_user_id = ?
+      )
+  `).run(adminUserId);
+}
+
 export function initDb() {
   db.pragma('journal_mode = WAL');
 
@@ -266,6 +284,8 @@ export function initDb() {
   }
 
   migrateFromLegacyJson(adminUserId);
+
+  reconcilePostOwners(adminUserId);
 
   db.prepare('UPDATE posts SET owner_user_id = ? WHERE owner_user_id IS NULL').run(adminUserId);
   db.prepare('UPDATE game_accounts SET owner_user_id = ? WHERE owner_user_id IS NULL').run(adminUserId);

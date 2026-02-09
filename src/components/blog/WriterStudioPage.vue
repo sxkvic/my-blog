@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import SiteHeader from './SiteHeader.vue';
 import SiteFooter from './SiteFooter.vue';
-import type { Author, Channel, PostMedia } from '../../data/blog';
+import SiteHeader from './SiteHeader.vue';
+import type { Author, BlogPost, Channel, PostMedia } from '../../data/blog';
 import type { PostDraft } from '../../services/postGateway';
 
 const props = defineProps<{
   siteName: string;
   authors: Author[];
-  onPublish: (draft: PostDraft) => Promise<{ slug: string }>;
+  mode?: 'create' | 'edit';
+  initialPost?: BlogPost;
+  onSubmit: (draft: PostDraft) => Promise<{ slug: string }>;
 }>();
 
 const router = useRouter();
 const saving = ref(false);
+const defaultDate = new Date().toISOString().slice(0, 10);
 
 const form = reactive({
   title: '',
@@ -22,7 +25,7 @@ const form = reactive({
   category: '',
   tags: '',
   authorId: props.authors[0]?.id ?? 'kai',
-  publishedAt: new Date().toISOString().slice(0, 10),
+  publishedAt: defaultDate,
   readTime: '6 分钟',
   contentText: '',
   imageUrl: '',
@@ -32,6 +35,45 @@ const form = reactive({
 });
 
 const mediaList = ref<PostMedia[]>([]);
+
+function resetForm() {
+  form.title = '';
+  form.excerpt = '';
+  form.channel = '技术心得';
+  form.category = '';
+  form.tags = '';
+  form.authorId = props.authors[0]?.id ?? 'kai';
+  form.publishedAt = defaultDate;
+  form.readTime = '6 分钟';
+  form.contentText = '';
+  form.imageUrl = '';
+  form.imageCaption = '';
+  form.videoUrl = '';
+  form.videoCaption = '';
+  mediaList.value = [];
+}
+
+watch(
+  () => props.initialPost,
+  (post) => {
+    if (!post) {
+      resetForm();
+      return;
+    }
+
+    form.title = post.title;
+    form.excerpt = post.excerpt;
+    form.channel = post.channel;
+    form.category = post.category;
+    form.tags = post.tags.join(', ');
+    form.authorId = post.authorId;
+    form.publishedAt = post.publishedAt;
+    form.readTime = post.readTime;
+    form.contentText = post.content.join('\n\n');
+    mediaList.value = Array.isArray(post.media) ? [...post.media] : [];
+  },
+  { immediate: true }
+);
 
 function addImage() {
   if (!form.imageUrl.trim()) {
@@ -55,7 +97,7 @@ function removeMedia(index: number) {
   mediaList.value.splice(index, 1);
 }
 
-async function publish() {
+async function submit() {
   if (!form.title.trim() || !form.excerpt.trim() || !form.contentText.trim()) {
     window.alert('请至少填写：标题、摘要、正文');
     return;
@@ -84,7 +126,7 @@ async function publish() {
       media: mediaList.value,
     };
 
-    const created = await props.onPublish(draft);
+    const created = await props.onSubmit(draft);
     await router.push(`/blog/${created.slug}`);
   } finally {
     saving.value = false;
@@ -98,8 +140,8 @@ async function publish() {
     <main class="writer-main">
       <section class="writer-head">
         <p class="kicker">WRITER STUDIO</p>
-        <h1>新建文章</h1>
-        <p>写完即可发布到博客，支持插入图片和视频链接。</p>
+        <h1>{{ mode === 'edit' ? '编辑文章' : '新建文章' }}</h1>
+        <p>{{ mode === 'edit' ? '修改后保存更新到原文章。' : '写完即可发布到博客，支持插入图片和视频链接。' }}</p>
       </section>
 
       <section class="editor-grid">
@@ -183,8 +225,8 @@ async function publish() {
             </div>
           </article>
 
-          <button class="publish" type="button" :disabled="saving" @click="publish">
-            {{ saving ? '发布中...' : '发布文章' }}
+          <button class="publish" type="button" :disabled="saving" @click="submit">
+            {{ saving ? (mode === 'edit' ? '保存中...' : '发布中...') : (mode === 'edit' ? '保存修改' : '发布文章') }}
           </button>
         </aside>
       </section>

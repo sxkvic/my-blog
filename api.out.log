@@ -1,0 +1,64 @@
+
+> my-blog@0.0.1 api
+> node server/src/index.js
+
+[api] listening on :3000
+GET /api/health 200 51 - 2.361 ms
+GET /api/posts 304 - - 1.039 ms
+GET /api/posts 304 - - 0.466 ms
+GET /api/posts 304 - - 0.388 ms
+POST /api/auth/register 409 32 - 0.446 ms
+POST /api/auth/register 201 40 - 40.880 ms
+POST /api/auth/login 200 253 - 41.668 ms
+GET /api/auth/me 200 40 - 1.837 ms
+GET /api/memo-tasks 304 - - 1.647 ms
+GET /api/auth/me 304 - - 1.524 ms
+GET /api/auth/me 304 - - 1.018 ms
+POST /api/posts 201 278 - 1.851 ms
+GET /api/posts 200 280 - 2.104 ms
+DELETE /api/posts/111 204 - - 4.277 ms
+GET /api/posts 200 2 - 0.340 ms
+GET /api/auth/me 304 - - 1.345 ms
+GET /api/auth/me 304 - - 1.312 ms
+GET /api/auth/me 304 - - 1.016 ms
+GET /api/memo-tasks 304 - - 1.799 ms
+GET /api/auth/me 304 - - 0.957 ms
+GET /api/auth/me 304 - - 1.528 ms
+GET /api/game-accounts 304 - - 1.287 ms
+GET /api/auth/me 304 - - 0.887 ms
+GET /api/auth/me 304 - - 1.080 ms
+GET /api/game-accounts 304 - - 1.031 ms
+GET /api/auth/me 304 - - 0.886 ms
+GET /api/auth/me 304 - - 0.937 ms
+GET /api/auth/me 304 - - 0.941 ms
+GET /api/auth/me 304 - - 0.884 ms
+GET /api/auth/me 304 - - 1.191 ms
+GET /api/game-accounts 304 - - 1.702 ms
+GET /api/auth/me 304 - - 0.865 ms
+GET /api/posts 304 - - 0.313 ms
+GET /api/posts 304 - - 0.258 ms
+GET /api/auth/me 304 - - 0.874 ms
+POST /api/posts 201 272 - 1.195 ms
+GET /api/auth/me 304 - - 1.565 ms
+PUT /api/posts/222 200 275 - 1.823 ms
+DELETE /api/posts/222 204 - - 1.040 ms
+GET /api/auth/me 304 - - 1.127 ms
+GET /api/auth/me 304 - - 1.077 ms
+GET /api/auth/me 304 - - 0.896 ms
+GET /api/auth/me 304 - - 1.385 ms
+GET /api/memo-tasks 304 - - 1.511 ms
+GET /api/posts 200 2 - 0.290 ms
+GET /api/auth/me 304 - - 1.196 ms
+POST /api/posts 201 257 - 1.171 ms
+GET /api/auth/me 304 - - 0.850 ms
+PUT /api/posts/11 200 257 - 1.384 ms
+DELETE /api/posts/11 204 - - 1.004 ms
+GET /api/auth/me 304 - - 1.051 ms
+GET /api/auth/me 304 - - 0.917 ms
+POST /api/posts 201 254 - 1.269 ms
+DELETE /api/posts/1 204 - - 1.000 ms
+GET /api/auth/me 304 - - 0.921 ms
+POST /api/posts 201 257 - 1.244 ms
+GET /api/posts 200 259 - 0.385 ms
+POST /api/auth/register 201 40 - 39.564 ms
+POST /api/auth/login 200 253 - 40.615 ms

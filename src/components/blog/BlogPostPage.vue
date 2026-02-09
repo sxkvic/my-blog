@@ -11,6 +11,12 @@ const props = defineProps<{
   post: BlogPost;
   author?: Author;
   relatedPosts: BlogPost[];
+  canManage?: boolean;
+  deleting?: boolean;
+}>();
+const emit = defineEmits<{
+  edit: [];
+  delete: [];
 }>();
 
 const dateText = computed(() => {
@@ -30,6 +36,14 @@ const dateText = computed(() => {
           <div class="meta-row">
             <p v-if="author">作者：{{ author.name }} · {{ author.role }}</p>
             <p>{{ dateText }} · {{ post.readTime }} · {{ post.views.toLocaleString() }} 阅读</p>
+          </div>
+          <div v-if="canManage" class="manage-row">
+            <button type="button" :disabled="deleting" @click="emit('edit')">
+              编辑文章
+            </button>
+            <button type="button" class="danger" :disabled="deleting" @click="emit('delete')">
+              {{ deleting ? '删除中...' : '删除文章' }}
+            </button>
           </div>
         </header>
 
@@ -115,6 +129,36 @@ h1 {
 
 .meta-row p {
   margin: 0;
+}
+
+.manage-row {
+  margin-top: 0.85rem;
+  display: flex;
+  gap: 0.55rem;
+}
+
+.manage-row button {
+  min-height: 2.1rem;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--ink);
+  padding: 0 0.72rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.manage-row button:hover:not(:disabled) {
+  border-color: var(--accent-cyan);
+}
+
+.manage-row .danger {
+  border-color: color-mix(in srgb, #ff7f7f 55%, var(--line-strong));
+}
+
+.manage-row button:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
 }
 
 .post-content {

@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, ref, watchEffect } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import BlogPostPage from '../components/blog/BlogPostPage.vue';
 import { useBlog } from '../composables/useBlog';
+import { useConfirmDialog } from '../composables/useConfirmDialog';
+import { getAuthUser } from '../services/vaultAuthGateway';
 
 const route = useRoute();
-const { getPostBySlug, getRelatedPosts, siteData, authors } = useBlog();
+const router = useRouter();
+const { confirm } = useConfirmDialog();
+const { getPostBySlug, getRelatedPosts, siteData, authors, removePost } = useBlog();
+const authUser = getAuthUser();
+const deleting = ref(false);
+const errorText = ref('');
 
 const post = computed(() => getPostBySlug(String(route.params.slug ?? '')));
 const author = computed(() => {
@@ -22,6 +29,53 @@ const relatedPosts = computed(() => {
   return getRelatedPosts(post.value.slug, post.value.channel);
 });
 
+const canManage = computed(() => {
+  if (!post.value || !post.value.createdByUser || !authUser) {
+    return false;
+  }
+  if (authUser.role === 'admin') {
+    return true;
+  }
+  return post.value.ownerUserId === authUser.id;
+});
+
+async function startEdit() {
+  if (!post.value || !canManage.value) {
+    return;
+  }
+  errorText.value = '';
+  await router.push({ path: '/write', query: { edit: post.value.slug } });
+}
+
+async function handleDelete() {
+  if (!post.value) {
+    return;
+  }
+
+  const ok = await confirm({
+    title: '确认删除文章',
+    message: `你将删除《${post.value.title}》。删除后不可恢复，请再次确认。`,
+    confirmText: '确认删除',
+    cancelText: '我再想想',
+    tone: 'danger',
+  });
+
+  if (!ok) {
+    return;
+  }
+
+  deleting.value = true;
+  errorText.value = '';
+  try {
+    await removePost(post.value.slug);
+    await router.replace('/blog');
+  } catch {
+    errorText.value = '删除失败，请稍后再试';
+  } finally {
+    deleting.value = false;
+  }
+}
+
 watchEffect(() => {
   if (post.value) {
     document.title = `${post.value.title} | ${siteData.name}`;
@@ -30,13 +84,19 @@ watchEffect(() => {
 </script>
 
 <template>
-  <BlogPostPage
-    v-if="post"
-    :site-name="siteData.name"
-    :post="post"
-    :author="author"
-    :related-posts="relatedPosts"
-  />
+  <div v-if="post">
+    <BlogPostPage
+      :site-name="siteData.name"
+      :post="post"
+      :author="author"
+      :related-posts="relatedPosts"
+      :can-manage="canManage"
+      :deleting="deleting"
+      @edit="startEdit"
+      @delete="handleDelete"
+    />
+    <p v-if="errorText" class="inline-error">{{ errorText }}</p>
+  </div>
   <main v-else class="not-found">
     <h1>未找到文章</h1>
     <p>你访问的文章可能已移动或删除。</p>
@@ -69,5 +129,14 @@ watchEffect(() => {
   color: var(--accent-cyan);
   text-decoration: none;
   font-weight: 600;
+}
+
+.inline-error {
+  color: #ff8686;
+}
+
+.inline-error {
+  width: min(980px, calc(100% - 2rem));
+  margin: 0.75rem auto 1.2rem;
 }
 </style>
