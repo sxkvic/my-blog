@@ -6,6 +6,7 @@ import GamesVaultView from '../views/GamesVaultView.vue';
 import HomeView from '../views/HomeView.vue';
 import LoginView from '../views/LoginView.vue';
 import MemoView from '../views/MemoView.vue';
+import ToolsView from '../views/ToolsView.vue';
 import WriteView from '../views/WriteView.vue';
 import { clearVaultToken, getVaultToken, setAuthUser, verifyVaultSession } from '../services/vaultAuthGateway';
 
@@ -19,6 +20,7 @@ const router = createRouter({
     { path: '/write', name: 'write', component: WriteView, meta: { title: '写作台 | Neo日志', requiresAuth: true } },
     { path: '/memo', name: 'memo', component: MemoView, meta: { title: '备忘录 | Neo日志', requiresAuth: true } },
     { path: '/games', name: 'games', component: GamesVaultView, meta: { title: '游戏仓 | Neo日志', requiresAuth: true } },
+    { path: '/tools', name: 'tools', component: ToolsView, meta: { title: '工具集 | Neo日志', requiresAuth: true } },
     { path: '/about', name: 'about', component: AboutView, meta: { title: '关于我 | Neo日志' } },
     { path: '/:pathMatch(.*)*', redirect: '/blog' },
   ],

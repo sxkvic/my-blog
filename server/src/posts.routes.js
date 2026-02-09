@@ -1,5 +1,15 @@
+import { randomUUID } from 'node:crypto';
 import express from 'express';
-import { createPost, deletePost, findPostBySlug, listPosts, updatePost } from './db.js';
+import {
+  createPost,
+  createPostComment,
+  deletePost,
+  deletePostComment,
+  findPostBySlug,
+  listPostComments,
+  listPosts,
+  updatePost,
+} from './db.js';
 import { requireAuth } from './auth.js';
 
 const router = express.Router();
@@ -60,6 +70,40 @@ router.post('/', requireAuth, (req, res) => {
   return res.status(201).json(created);
 });
 
+router.get('/:slug/comments', (req, res) => {
+  const { slug } = req.params;
+  const post = findPostBySlug(slug);
+  if (!post) {
+    return res.status(404).json({ message: '文章不存在' });
+  }
+
+  return res.json(listPostComments(slug));
+});
+
+router.post('/:slug/comments', requireAuth, (req, res) => {
+  const { slug } = req.params;
+  const post = findPostBySlug(slug);
+  if (!post) {
+    return res.status(404).json({ message: '文章不存在' });
+  }
+
+  const payload = req.body ?? {};
+  const content = String(payload.content || '').trim();
+  if (!content) {
+    return res.status(400).json({ message: 'content 为必填字段' });
+  }
+
+  const created = createPostComment({
+    id: randomUUID(),
+    postSlug: slug,
+    content,
+    ownerUserId: req.auth.userId,
+    username: req.auth.username,
+  });
+
+  return res.status(201).json(created);
+});
+
 router.put('/:slug', requireAuth, (req, res) => {
   const { slug } = req.params;
   const payload = req.body ?? {};
@@ -70,6 +114,21 @@ router.put('/:slug', requireAuth, (req, res) => {
   }
 
   return res.json(updated);
+});
+
+router.delete('/:slug/comments/:commentId', requireAuth, (req, res) => {
+  const { slug, commentId } = req.params;
+  const post = findPostBySlug(slug);
+  if (!post) {
+    return res.status(404).json({ message: '文章不存在' });
+  }
+
+  const deleted = deletePostComment(commentId, req.auth);
+  if (!deleted) {
+    return res.status(404).json({ message: '评论不存在或无权限' });
+  }
+
+  return res.status(204).send();
 });
 
 router.delete('/:slug', requireAuth, (req, res) => {

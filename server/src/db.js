@@ -69,6 +69,29 @@ function mapMemoTask(row) {
   };
 }
 
+function mapPostComment(row) {
+  return {
+    id: row.id,
+    postSlug: row.post_slug,
+    content: row.content,
+    ownerUserId: row.owner_user_id == null ? undefined : Number(row.owner_user_id),
+    username: row.username,
+    createdAt: row.created_at,
+  };
+}
+
+function mapToolLink(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    url: row.url,
+    description: row.description,
+    category: row.category,
+    iconText: row.icon_text,
+    ownerUserId: row.owner_user_id == null ? undefined : Number(row.owner_user_id),
+  };
+}
+
 const memoSeedTasks = [];
 
 function hasColumn(table, column) {
@@ -267,11 +290,35 @@ export function initDb() {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS post_comments (
+      id TEXT PRIMARY KEY,
+      post_slug TEXT NOT NULL,
+      content TEXT NOT NULL,
+      owner_user_id INTEGER,
+      username TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS tool_links (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      description TEXT NOT NULL,
+      category TEXT NOT NULL,
+      icon_text TEXT NOT NULL,
+      owner_user_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   ensureColumn('posts', 'owner_user_id', 'INTEGER');
   ensureColumn('game_accounts', 'owner_user_id', 'INTEGER');
   ensureColumn('memo_tasks', 'owner_user_id', 'INTEGER');
+  ensureColumn('post_comments', 'owner_user_id', 'INTEGER');
+  ensureColumn('tool_links', 'owner_user_id', 'INTEGER');
 
   const adminUserId = ensureDefaultUsers();
 
@@ -290,6 +337,8 @@ export function initDb() {
   db.prepare('UPDATE posts SET owner_user_id = ? WHERE owner_user_id IS NULL').run(adminUserId);
   db.prepare('UPDATE game_accounts SET owner_user_id = ? WHERE owner_user_id IS NULL').run(adminUserId);
   db.prepare('UPDATE memo_tasks SET owner_user_id = ? WHERE owner_user_id IS NULL').run(adminUserId);
+  db.prepare('UPDATE post_comments SET owner_user_id = ? WHERE owner_user_id IS NULL').run(adminUserId);
+  db.prepare('UPDATE tool_links SET owner_user_id = ? WHERE owner_user_id IS NULL').run(adminUserId);
 
   const memoCount = db.prepare('SELECT COUNT(*) AS count FROM memo_tasks').get().count;
   if (memoCount === 0) {
@@ -408,6 +457,46 @@ export function deletePost(slug, auth) {
   }
 
   const result = db.prepare('DELETE FROM posts WHERE slug = ?').run(slug);
+  return result.changes > 0;
+}
+
+function findPostCommentRowById(id) {
+  return db.prepare('SELECT * FROM post_comments WHERE id = ?').get(id);
+}
+
+export function listPostComments(postSlug) {
+  const rows = db
+    .prepare('SELECT * FROM post_comments WHERE post_slug = ? ORDER BY created_at DESC')
+    .all(postSlug);
+  return rows.map(mapPostComment);
+}
+
+export function createPostComment(comment) {
+  db.prepare(`
+    INSERT INTO post_comments (
+      id, post_slug, content, owner_user_id, username
+    ) VALUES (
+      @id, @post_slug, @content, @owner_user_id, @username
+    )
+  `).run({
+    id: comment.id,
+    post_slug: comment.postSlug,
+    content: comment.content,
+    owner_user_id: comment.ownerUserId,
+    username: comment.username,
+  });
+
+  const row = findPostCommentRowById(comment.id);
+  return row ? mapPostComment(row) : null;
+}
+
+export function deletePostComment(id, auth) {
+  const row = findPostCommentRowById(id);
+  if (!row || !canAccessOwner(auth, row.owner_user_id)) {
+    return false;
+  }
+
+  const result = db.prepare('DELETE FROM post_comments WHERE id = ?').run(id);
   return result.changes > 0;
 }
 
@@ -579,6 +668,80 @@ export function deleteMemoTask(id, auth) {
   }
 
   const result = db.prepare('DELETE FROM memo_tasks WHERE id = ?').run(id);
+  return result.changes > 0;
+}
+
+export function listToolLinks() {
+  const rows = db.prepare('SELECT * FROM tool_links ORDER BY created_at DESC').all();
+  return rows.map(mapToolLink);
+}
+
+function findToolLinkRowById(id) {
+  return db.prepare('SELECT * FROM tool_links WHERE id = ?').get(id);
+}
+
+export function findToolLinkById(id) {
+  const row = findToolLinkRowById(id);
+  return row ? mapToolLink(row) : null;
+}
+
+export function createToolLink(link) {
+  db.prepare(`
+    INSERT INTO tool_links (
+      id, name, url, description, category, icon_text, owner_user_id
+    ) VALUES (
+      @id, @name, @url, @description, @category, @icon_text, @owner_user_id
+    )
+  `).run({
+    id: link.id,
+    name: link.name,
+    url: link.url,
+    description: link.description,
+    category: link.category,
+    icon_text: link.iconText,
+    owner_user_id: link.ownerUserId,
+  });
+
+  return findToolLinkById(link.id);
+}
+
+export function updateToolLink(id, payload, auth) {
+  const currentRow = findToolLinkRowById(id);
+  if (!currentRow || !canAccessOwner(auth, currentRow.owner_user_id)) {
+    return null;
+  }
+
+  const current = mapToolLink(currentRow);
+  const merged = { ...current, ...payload, id };
+
+  db.prepare(`
+    UPDATE tool_links SET
+      name = @name,
+      url = @url,
+      description = @description,
+      category = @category,
+      icon_text = @icon_text,
+      updated_at = datetime('now')
+    WHERE id = @id
+  `).run({
+    id,
+    name: merged.name,
+    url: merged.url,
+    description: merged.description,
+    category: merged.category,
+    icon_text: merged.iconText,
+  });
+
+  return findToolLinkById(id);
+}
+
+export function deleteToolLink(id, auth) {
+  const row = findToolLinkRowById(id);
+  if (!row || !canAccessOwner(auth, row.owner_user_id)) {
+    return false;
+  }
+
+  const result = db.prepare('DELETE FROM tool_links WHERE id = ?').run(id);
   return result.changes > 0;
 }
 

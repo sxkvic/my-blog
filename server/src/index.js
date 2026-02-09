@@ -8,6 +8,7 @@ import { initDb } from './db.js';
 import gameAccountsRouter from './gameAccounts.routes.js';
 import memoRouter from './memo.routes.js';
 import postsRouter from './posts.routes.js';
+import toolsRouter from './tools.routes.js';
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -27,6 +28,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/posts', postsRouter);
 app.use('/api/memo-tasks', requireVaultAuth, memoRouter);
 app.use('/api/game-accounts', requireVaultAuth, gameAccountsRouter);
+app.use('/api/tools', requireVaultAuth, toolsRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Not Found' });

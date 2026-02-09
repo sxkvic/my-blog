@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, useSlots } from 'vue';
 import { RouterLink } from 'vue-router';
 import type { Author, BlogPost } from '../../data/blog';
 import SiteHeader from './SiteHeader.vue';
@@ -18,6 +18,8 @@ const emit = defineEmits<{
   edit: [];
   delete: [];
 }>();
+const slots = useSlots();
+const hasCommentsSlot = computed(() => Boolean(slots.comments));
 
 const dateText = computed(() => {
   return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'long' }).format(new Date(props.post.publishedAt));
@@ -28,41 +30,46 @@ const dateText = computed(() => {
   <div>
     <SiteHeader :site-name="siteName" active-path="/blog" />
     <main class="post-main">
-      <article class="post-wrap">
-        <header class="post-header">
-          <p class="topic">{{ post.channel }} · {{ post.category }}</p>
-          <h1>{{ post.title }}</h1>
-          <p class="deck">{{ post.excerpt }}</p>
-          <div class="meta-row">
-            <p v-if="author">作者：{{ author.name }} · {{ author.role }}</p>
-            <p>{{ dateText }} · {{ post.readTime }} · {{ post.views.toLocaleString() }} 阅读</p>
+      <section :class="['top-layout', { 'with-comments': hasCommentsSlot }]">
+        <article class="post-wrap">
+          <header class="post-header">
+            <p class="topic">{{ post.channel }} · {{ post.category }}</p>
+            <h1>{{ post.title }}</h1>
+            <p class="deck">{{ post.excerpt }}</p>
+            <div class="meta-row">
+              <p v-if="author">作者：{{ author.name }} · {{ author.role }}</p>
+              <p>{{ dateText }} · {{ post.readTime }} · {{ post.views.toLocaleString() }} 阅读</p>
+            </div>
+            <div v-if="canManage" class="manage-row">
+              <button type="button" :disabled="deleting" @click="emit('edit')">
+                编辑文章
+              </button>
+              <button type="button" class="danger" :disabled="deleting" @click="emit('delete')">
+                {{ deleting ? '删除中...' : '删除文章' }}
+              </button>
+            </div>
+          </header>
+
+          <div class="post-content">
+            <p v-for="(paragraph, index) in post.content" :key="index">{{ paragraph }}</p>
           </div>
-          <div v-if="canManage" class="manage-row">
-            <button type="button" :disabled="deleting" @click="emit('edit')">
-              编辑文章
-            </button>
-            <button type="button" class="danger" :disabled="deleting" @click="emit('delete')">
-              {{ deleting ? '删除中...' : '删除文章' }}
-            </button>
+
+          <div v-if="post.media?.length" class="media-grid">
+            <article v-for="(media, index) in post.media" :key="index" class="media-card">
+              <img v-if="media.type === 'image'" :src="media.url" :alt="media.caption || '插图'" loading="lazy" />
+              <video v-else :src="media.url" controls preload="metadata" />
+              <p v-if="media.caption">{{ media.caption }}</p>
+            </article>
           </div>
-        </header>
 
-        <div class="post-content">
-          <p v-for="(paragraph, index) in post.content" :key="index">{{ paragraph }}</p>
-        </div>
-
-        <div v-if="post.media?.length" class="media-grid">
-          <article v-for="(media, index) in post.media" :key="index" class="media-card">
-            <img v-if="media.type === 'image'" :src="media.url" :alt="media.caption || '插图'" loading="lazy" />
-            <video v-else :src="media.url" controls preload="metadata" />
-            <p v-if="media.caption">{{ media.caption }}</p>
-          </article>
-        </div>
-
-        <div class="tags">
-          <RouterLink v-for="tag in post.tags" :key="tag" to="/blog">#{{ tag }}</RouterLink>
-        </div>
-      </article>
+          <div class="tags">
+            <RouterLink v-for="tag in post.tags" :key="tag" to="/blog">#{{ tag }}</RouterLink>
+          </div>
+        </article>
+        <aside v-if="hasCommentsSlot" class="comments-side">
+          <slot name="comments" />
+        </aside>
+      </section>
 
       <section v-if="relatedPosts.length" class="related">
         <header>
@@ -83,6 +90,16 @@ const dateText = computed(() => {
   margin: 1.4rem auto 0;
   display: grid;
   gap: 1.2rem;
+}
+
+.top-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.top-layout.with-comments {
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
 }
 
 .post-wrap {
@@ -223,6 +240,12 @@ h1 {
   gap: 0.75rem;
 }
 
+.comments-side {
+  position: sticky;
+  top: 5.2rem;
+  z-index: 2;
+}
+
 .related h2 {
   margin: 0;
   font-family: var(--font-display);
@@ -235,6 +258,14 @@ h1 {
 }
 
 @media (max-width: 980px) {
+  .top-layout.with-comments {
+    grid-template-columns: 1fr;
+  }
+
+  .comments-side {
+    position: static;
+  }
+
   .related-grid {
     grid-template-columns: 1fr;
   }
