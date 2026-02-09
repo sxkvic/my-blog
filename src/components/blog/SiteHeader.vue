@@ -11,6 +11,7 @@ const links = [
   { href: '/', label: '首页' },
   { href: '/blog', label: '文章' },
   { href: '/write', label: '写作台' },
+  { href: '/memo', label: '备忘录' },
   { href: '/games', label: '游戏仓' },
   { href: '/about', label: '关于我' },
 ];

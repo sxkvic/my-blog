@@ -4,6 +4,7 @@ import BlogListView from '../views/BlogListView.vue';
 import BlogPostView from '../views/BlogPostView.vue';
 import GamesVaultView from '../views/GamesVaultView.vue';
 import HomeView from '../views/HomeView.vue';
+import MemoView from '../views/MemoView.vue';
 import WriteView from '../views/WriteView.vue';
 
 const router = createRouter({
@@ -13,6 +14,7 @@ const router = createRouter({
     { path: '/blog', name: 'blog', component: BlogListView, meta: { title: '文章库 | Neo日志' } },
     { path: '/blog/:slug', name: 'blog-post', component: BlogPostView, meta: { title: '文章详情 | Neo日志' } },
     { path: '/write', name: 'write', component: WriteView, meta: { title: '写作台 | Neo日志' } },
+    { path: '/memo', name: 'memo', component: MemoView, meta: { title: '备忘录 | Neo日志' } },
     { path: '/games', name: 'games', component: GamesVaultView, meta: { title: '游戏仓 | Neo日志' } },
     { path: '/about', name: 'about', component: AboutView, meta: { title: '关于我 | Neo日志' } },
     { path: '/:pathMatch(.*)*', redirect: '/blog' },
