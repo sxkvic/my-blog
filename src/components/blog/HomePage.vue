@@ -161,10 +161,10 @@ main {
 h1 {
   margin: 0.4rem 0 0;
   font-family: var(--font-display);
-  font-size: clamp(2rem, 5vw, 4rem);
-  line-height: 0.95;
+  font-size: clamp(1.62rem, 3.25vw, 2.75rem);
+  line-height: 1.04;
   color: var(--ink-strong);
-  max-width: 14ch;
+  max-width: 16ch;
 }
 
 .tagline {
@@ -200,6 +200,7 @@ h1 {
 .hero-side:hover {
   transform: translateY(-4px);
   border-color: color-mix(in srgb, var(--accent-cyan) 60%, var(--line-soft));
+  box-shadow: 0 18px 36px color-mix(in srgb, var(--accent-cyan) 22%, transparent);
 }
 
 .side-label {
@@ -290,6 +291,13 @@ h1 {
   border-radius: 18px;
   background: color-mix(in srgb, var(--surface) 84%, transparent);
   padding: 1rem;
+  transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+}
+
+.panel:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent-cyan) 55%, var(--line-soft));
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--accent-cyan) 14%, transparent);
 }
 
 .panel h3 {

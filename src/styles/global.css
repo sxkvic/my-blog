@@ -21,6 +21,23 @@
   --line-strong: #9eb3c2;
 }
 
+:root[data-theme='neon-dark'] {
+  --page: #05070b;
+  --surface: #0d1118;
+  --panel-ink: #eaf6ff;
+
+  --ink-strong: #f2fbff;
+  --ink: #d6e8f5;
+  --ink-muted: #9db7c9;
+  --ink-subtle: #7d97ac;
+
+  --accent-cyan: #2fe6ff;
+  --accent-orange: #ff9f58;
+
+  --line-soft: #203142;
+  --line-strong: #33506a;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -39,7 +56,16 @@ body {
   background:
     radial-gradient(980px 420px at -10% -10%, color-mix(in srgb, var(--accent-cyan) 25%, transparent), transparent 58%),
     radial-gradient(900px 420px at 110% 0%, color-mix(in srgb, var(--accent-orange) 18%, transparent), transparent 62%),
-    linear-gradient(180deg, var(--page), #e9eff4 70%);
+    linear-gradient(180deg, var(--page), color-mix(in srgb, var(--page) 80%, #dbe3ea));
+  transition: background 0.42s ease, color 0.3s ease;
+}
+
+:root[data-theme='neon-dark'] body {
+  background:
+    radial-gradient(1000px 500px at -10% -20%, color-mix(in srgb, #15dbff 30%, transparent), transparent 60%),
+    radial-gradient(900px 460px at 120% 0%, color-mix(in srgb, #ff7a2f 24%, transparent), transparent 62%),
+    radial-gradient(860px 420px at 50% 120%, color-mix(in srgb, #9d4dff 20%, transparent), transparent 66%),
+    linear-gradient(180deg, #05070b, #070d16 66%, #05070b);
 }
 
 a {
@@ -54,6 +80,19 @@ h5,
 h6,
 p {
   margin: 0;
+}
+
+input,
+textarea,
+select,
+button,
+article,
+section,
+aside,
+header,
+footer,
+nav {
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .sr-only {
