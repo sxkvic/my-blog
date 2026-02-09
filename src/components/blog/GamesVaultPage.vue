@@ -3,13 +3,17 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import SiteHeader from './SiteHeader.vue';
 import SiteFooter from './SiteFooter.vue';
 import type { GameVaultItem } from '../../data/blog';
+import {
+  createGameAccount,
+  deleteGameAccount,
+  listGameAccounts,
+  updateGameAccount,
+} from '../../services/gameVaultGateway';
 
 const props = defineProps<{
   siteName: string;
   records: GameVaultItem[];
 }>();
-
-const STORAGE_KEY = 'neon-game-vault-v1';
 
 const vaultItems = ref<GameVaultItem[]>([]);
 const keyword = ref('');
@@ -19,6 +23,7 @@ const showForm = ref(false);
 const formMode = ref<'create' | 'edit'>('create');
 const visibleMap = reactive<Record<string, boolean>>({});
 const copiedMap = reactive<Record<string, string>>({});
+const loading = ref(false);
 
 const formState = reactive<GameVaultItem>({
   id: '',
@@ -65,24 +70,16 @@ const stats = computed(() => {
   };
 });
 
-function safeHydrate() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved) as GameVaultItem[];
-      if (Array.isArray(parsed) && parsed.length) {
-        vaultItems.value = parsed;
-        return;
-      }
-    } catch {
-      // fallback to default
-    }
+async function loadAccounts() {
+  loading.value = true;
+  try {
+    const data = await listGameAccounts();
+    vaultItems.value = data.length ? data : [...props.records];
+  } catch {
+    vaultItems.value = [...props.records];
+  } finally {
+    loading.value = false;
   }
-  vaultItems.value = [...props.records];
-}
-
-function persist() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(vaultItems.value));
 }
 
 function masked(value: string) {
@@ -124,7 +121,7 @@ function openEdit(item: GameVaultItem) {
   showForm.value = true;
 }
 
-function removeItem(id: string) {
+async function removeItem(id: string) {
   const target = vaultItems.value.find((item) => item.id === id);
   if (!target) {
     return;
@@ -133,49 +130,46 @@ function removeItem(id: string) {
   if (!ok) {
     return;
   }
+
+  await deleteGameAccount(id);
   vaultItems.value = vaultItems.value.filter((item) => item.id !== id);
   if (selectedId.value === id) {
     selectedId.value = '';
   }
 }
 
-function saveForm() {
+async function saveForm() {
   if (!formState.game || !formState.account || !formState.password) {
     window.alert('请至少填写：游戏名、账号、密码');
     return;
   }
 
-  const payload: GameVaultItem = {
-    ...formState,
-    id: formState.id || `game-${Date.now()}`,
+  const payload = {
+    game: formState.game,
     server: formState.server || '未填写',
+    account: formState.account,
+    password: formState.password,
     role: formState.role || '未分类',
     lastLogin: formState.lastLogin || new Date().toISOString().slice(0, 10),
     notes: formState.notes || '暂无心得',
   };
 
   if (formMode.value === 'create') {
-    vaultItems.value = [payload, ...vaultItems.value];
-    selectedId.value = payload.id;
+    const created = await createGameAccount(payload);
+    vaultItems.value = [created, ...vaultItems.value];
+    selectedId.value = created.id;
   } else {
-    vaultItems.value = vaultItems.value.map((item) => (item.id === payload.id ? payload : item));
-    selectedId.value = payload.id;
+    const updated = await updateGameAccount(formState.id, payload);
+    vaultItems.value = vaultItems.value.map((item) => (item.id === updated.id ? updated : item));
+    selectedId.value = updated.id;
   }
 
   showForm.value = false;
 }
 
 onMounted(() => {
-  safeHydrate();
+  loadAccounts();
 });
-
-watch(
-  () => vaultItems.value,
-  () => {
-    persist();
-  },
-  { deep: true }
-);
 
 watch(
   () => filteredItems.value,
@@ -204,6 +198,7 @@ watch(
           <p>总账号 {{ stats.totalAccounts }}</p>
           <p>游戏 {{ stats.totalGames }}</p>
           <p>当前 {{ stats.shown }}</p>
+          <p v-if="loading">同步中...</p>
         </div>
       </section>
 

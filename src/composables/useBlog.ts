@@ -17,7 +17,13 @@ async function init() {
   if (initialized.value) {
     return;
   }
-  userPosts.value = await listUserPosts();
+
+  try {
+    userPosts.value = await listUserPosts();
+  } catch {
+    userPosts.value = [];
+  }
+
   initialized.value = true;
 }
 

@@ -1,0 +1,31 @@
+import cors from 'cors';
+import express from 'express';
+import morgan from 'morgan';
+import { initDb } from './db.js';
+import gameAccountsRouter from './gameAccounts.routes.js';
+import postsRouter from './posts.routes.js';
+
+const app = express();
+const port = Number(process.env.PORT || 3000);
+const origin = process.env.CORS_ORIGIN || '*';
+
+initDb();
+
+app.use(cors({ origin }));
+app.use(express.json({ limit: '1mb' }));
+app.use(morgan('tiny'));
+
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true, service: 'neon-blog-api', db: 'sqlite' });
+});
+
+app.use('/api/posts', postsRouter);
+app.use('/api/game-accounts', gameAccountsRouter);
+
+app.use((_req, res) => {
+  res.status(404).json({ message: 'Not Found' });
+});
+
+app.listen(port, () => {
+  console.log(`[api] listening on :${port}`);
+});
