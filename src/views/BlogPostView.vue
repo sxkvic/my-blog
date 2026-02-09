@@ -2,15 +2,25 @@
 import { computed, watchEffect } from 'vue';
 import { useRoute } from 'vue-router';
 import BlogPostPage from '../components/blog/BlogPostPage.vue';
-import { getAuthorById, getPostBySlug, getRelatedPosts, siteData } from '../data/blog';
+import { useBlog } from '../composables/useBlog';
 
 const route = useRoute();
+const { getPostBySlug, getRelatedPosts, siteData, authors } = useBlog();
 
 const post = computed(() => getPostBySlug(String(route.params.slug ?? '')));
-const author = computed(() => (post.value ? getAuthorById(post.value.authorId) : undefined));
-const relatedPosts = computed(() =>
-  post.value ? getRelatedPosts(post.value.slug, post.value.channel) : []
-);
+const author = computed(() => {
+  if (!post.value) {
+    return undefined;
+  }
+  return authors.find((item) => item.id === post.value?.authorId);
+});
+
+const relatedPosts = computed(() => {
+  if (!post.value) {
+    return [];
+  }
+  return getRelatedPosts(post.value.slug, post.value.channel);
+});
 
 watchEffect(() => {
   if (post.value) {

@@ -41,6 +41,10 @@ function authorOf(post: BlogPost) {
           <p class="kicker">PERSONAL STATION / CN</p>
           <h1>把生活、技术、游戏都写成可回放的轨迹。</h1>
           <p class="tagline">{{ tagline }}</p>
+          <div class="hero-actions">
+            <RouterLink to="/write" class="action-primary">开始写作</RouterLink>
+            <RouterLink to="/blog" class="action-ghost">浏览文章</RouterLink>
+          </div>
           <div class="metrics">
             <p>{{ stats.totalArticles }} 篇记录</p>
             <p>{{ stats.totalReaders }} 月访问</p>
@@ -171,6 +175,34 @@ h1 {
   margin-top: 0.8rem;
   color: var(--ink-muted);
   max-width: 52ch;
+}
+
+.hero-actions {
+  margin-top: 0.9rem;
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.hero-actions a {
+  text-decoration: none;
+  min-height: 2.2rem;
+  border-radius: 999px;
+  padding: 0 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-soft);
+}
+
+.action-primary {
+  border: 0 !important;
+  background: linear-gradient(125deg, var(--accent-cyan), #58f0ff);
+  color: #01212a;
+  font-weight: 700;
+}
+
+.action-ghost {
+  color: var(--ink);
 }
 
 .metrics {

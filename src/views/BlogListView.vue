@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import BlogListPage from '../components/blog/BlogListPage.vue';
-import { authors, categories, posts, siteData } from '../data/blog';
+import { useBlog } from '../composables/useBlog';
+
+const { allPosts, authors, categories, siteData } = useBlog();
 </script>
 
 <template>
   <BlogListPage
     :site-name="siteData.name"
-    :posts="posts"
+    :posts="allPosts"
     :categories="categories"
     :authors="authors"
   />

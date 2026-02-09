@@ -7,6 +7,12 @@ export interface Author {
 
 export type Channel = '日记' | '技术心得' | '游戏心得';
 
+export interface PostMedia {
+  type: 'image' | 'video';
+  url: string;
+  caption?: string;
+}
+
 export interface BlogPost {
   slug: string;
   title: string;
@@ -20,6 +26,8 @@ export interface BlogPost {
   readTime: string;
   featured: boolean;
   views: number;
+  media?: PostMedia[];
+  createdByUser?: boolean;
 }
 
 export interface GameVaultItem {
@@ -34,7 +42,7 @@ export interface GameVaultItem {
 }
 
 export const siteData = {
-  name: '霓虹日志',
+  name: 'Neo日志',
   tagline: '写生活、写代码、写游戏，做一个有记忆的数字基地。',
   newsletterText: '每周日发送一封总结邮件：本周复盘 + 技术碎片 + 游戏记录。',
 };

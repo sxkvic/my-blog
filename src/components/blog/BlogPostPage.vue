@@ -37,6 +37,14 @@ const dateText = computed(() => {
           <p v-for="(paragraph, index) in post.content" :key="index">{{ paragraph }}</p>
         </div>
 
+        <div v-if="post.media?.length" class="media-grid">
+          <article v-for="(media, index) in post.media" :key="index" class="media-card">
+            <img v-if="media.type === 'image'" :src="media.url" :alt="media.caption || '插图'" loading="lazy" />
+            <video v-else :src="media.url" controls preload="metadata" />
+            <p v-if="media.caption">{{ media.caption }}</p>
+          </article>
+        </div>
+
         <div class="tags">
           <RouterLink v-for="tag in post.tags" :key="tag" to="/blog">#{{ tag }}</RouterLink>
         </div>
@@ -123,6 +131,33 @@ h1 {
   font-size: clamp(1rem, 1.4vw, 1.1rem);
 }
 
+.media-grid {
+  margin-top: 1.2rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.media-card {
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 0.55rem;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+}
+
+.media-card img,
+.media-card video {
+  width: 100%;
+  border-radius: 8px;
+  display: block;
+}
+
+.media-card p {
+  margin-top: 0.45rem;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
 .tags {
   margin-top: 1.4rem;
   display: flex;
@@ -157,6 +192,10 @@ h1 {
 
 @media (max-width: 980px) {
   .related-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .media-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -10,6 +10,7 @@ defineProps<{
 const links = [
   { href: '/', label: '首页' },
   { href: '/blog', label: '文章' },
+  { href: '/write', label: '写作台' },
   { href: '/games', label: '游戏仓' },
   { href: '/about', label: '关于我' },
 ];
@@ -57,7 +58,7 @@ onMounted(() => {
         </nav>
         <button class="theme-toggle" type="button" @click="toggleTheme">
           <span class="dot" />
-          {{ isDark ? '切换浅色' : '霓虹夜' }}
+          {{ isDark ? '切换浅色' : 'Neo夜' }}
         </button>
       </div>
     </div>
