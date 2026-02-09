@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import SiteHeader from './SiteHeader.vue';
 import SiteFooter from './SiteFooter.vue';
 import type { GameVaultItem } from '../../data/blog';
@@ -26,7 +26,6 @@ const props = defineProps<{
 const vaultItems = ref<GameVaultItem[]>([]);
 const keyword = ref('');
 const selectedGame = ref('全部游戏');
-const selectedId = ref('');
 const showForm = ref(false);
 const formMode = ref<'create' | 'edit'>('create');
 const visibleMap = reactive<Record<string, boolean>>({});
@@ -77,13 +76,6 @@ const filteredItems = computed(() => {
     const keywordMatch = !term || text.includes(term);
     return gameMatch && keywordMatch;
   });
-});
-
-const selectedRecord = computed(() => {
-  if (!selectedId.value) {
-    return filteredItems.value[0];
-  }
-  return vaultItems.value.find((item) => item.id === selectedId.value) ?? filteredItems.value[0];
 });
 
 const stats = computed(() => {
@@ -165,9 +157,6 @@ async function removeItem(id: string) {
 
   await deleteGameAccount(id);
   vaultItems.value = vaultItems.value.filter((item) => item.id !== id);
-  if (selectedId.value === id) {
-    selectedId.value = '';
-  }
 }
 
 async function saveForm() {
@@ -189,11 +178,9 @@ async function saveForm() {
   if (formMode.value === 'create') {
     const created = await createGameAccount(payload);
     vaultItems.value = [created, ...vaultItems.value];
-    selectedId.value = created.id;
   } else {
     const updated = await updateGameAccount(formState.id, payload);
     vaultItems.value = vaultItems.value.map((item) => (item.id === updated.id ? updated : item));
-    selectedId.value = updated.id;
   }
 
   showForm.value = false;
@@ -245,7 +232,6 @@ function logout() {
   clearVaultToken();
   authorized.value = false;
   vaultItems.value = [];
-  selectedId.value = '';
 }
 
 async function submitPasswordChange() {
@@ -281,20 +267,6 @@ async function submitPasswordChange() {
 onMounted(() => {
   checkSession();
 });
-
-watch(
-  () => filteredItems.value,
-  (next) => {
-    if (!next.length) {
-      selectedId.value = '';
-      return;
-    }
-    if (!next.some((item) => item.id === selectedId.value)) {
-      selectedId.value = next[0].id;
-    }
-  },
-  { immediate: true }
-);
 </script>
 
 <template>
@@ -326,7 +298,6 @@ watch(
       <section class="hero reveal">
         <p class="kicker">GAME OPS CENTER</p>
         <h1>游戏仓控制台</h1>
-        <p>更舒展的管理布局：左侧分组导航，右侧账号矩阵 + 详情面板，不再挤压。</p>
         <div class="stats-row">
           <p>总账号 {{ stats.totalAccounts }}</p>
           <p>游戏 {{ stats.totalGames }}</p>
@@ -356,75 +327,48 @@ watch(
           </button>
         </aside>
 
-        <section class="board">
-          <section class="accounts-panel" aria-label="账号矩阵">
-            <header class="table-head">
-              <span>账号</span>
-              <span>游戏 / 区服</span>
-              <span>角色</span>
-              <span>最近登录</span>
-              <span>操作</span>
-            </header>
+        <section class="accounts-panel" aria-label="账号矩阵">
+          <header class="table-head">
+            <span>账号信息</span>
+            <span>游戏 / 区服</span>
+            <span>角色</span>
+            <span>操作</span>
+          </header>
 
-            <article
-              v-for="item in filteredItems"
-              :key="item.id"
-              :class="['table-row', { active: selectedRecord?.id === item.id }]"
-              @click="selectedId = item.id"
-            >
-              <p class="mono">{{ item.account }}</p>
-              <p>{{ item.game }} · {{ item.server }}</p>
-              <p>{{ item.role }}</p>
-              <p>{{ item.lastLogin }}</p>
-              <div class="row-actions">
-                <button type="button" @click.stop="copyText(item.id, 'account', item.account)">
-                  {{ copiedMap[item.id] === 'account' ? '已复制' : '复制账号' }}
-                </button>
-                <button type="button" @click.stop="openEdit(item)">编辑</button>
+          <article
+            v-for="item in filteredItems"
+            :key="item.id"
+            class="table-row"
+          >
+            <div class="account-cell">
+              <p class="mono account-name">{{ item.account }}</p>
+              <div class="account-meta">
+                <span class="meta-pill">
+                  密码：{{ visibleMap[item.id] ? item.password : masked(item.password) }}
+                </span>
+                <span class="meta-pill note" :title="item.notes || '暂无心得'">
+                  心得：{{ item.notes || '暂无心得' }}
+                </span>
               </div>
-            </article>
+            </div>
+            <p>{{ item.game }} · {{ item.server }}</p>
+            <p>{{ item.role }}</p>
+            <div class="row-actions">
+              <button type="button" @click.stop="copyText(item.id, 'account', item.account)">
+                {{ copiedMap[item.id] === 'account' ? '已复制账号' : '复制账号' }}
+              </button>
+              <button type="button" @click.stop="toggleVisible(item.id)">
+                {{ visibleMap[item.id] ? '隐藏密码' : '显示密码' }}
+              </button>
+              <button type="button" @click.stop="copyText(item.id, 'password', item.password)">
+                {{ copiedMap[item.id] === 'password' ? '已复制密码' : '复制密码' }}
+              </button>
+              <button type="button" @click.stop="openEdit(item)">编辑</button>
+              <button class="danger" type="button" @click.stop="removeItem(item.id)">删除</button>
+            </div>
+          </article>
 
-            <p v-if="!filteredItems.length" class="empty">当前筛选下没有账号记录。</p>
-          </section>
-
-          <aside class="detail-panel" aria-label="详情查看">
-            <template v-if="selectedRecord">
-              <h2>{{ selectedRecord.game }}</h2>
-              <p class="detail-meta">{{ selectedRecord.server }} · {{ selectedRecord.role }}</p>
-
-              <div class="detail-grid">
-                <p>
-                  <span>账号</span>
-                  <em>{{ selectedRecord.account }}</em>
-                </p>
-                <p>
-                  <span>密码</span>
-                  <em>{{ visibleMap[selectedRecord.id] ? selectedRecord.password : masked(selectedRecord.password) }}</em>
-                </p>
-                <p>
-                  <span>最近登录</span>
-                  <em>{{ selectedRecord.lastLogin }}</em>
-                </p>
-              </div>
-
-              <section class="note-box">
-                <h3>心得备注</h3>
-                <p>{{ selectedRecord.notes }}</p>
-              </section>
-
-              <div class="detail-actions">
-                <button type="button" @click="toggleVisible(selectedRecord.id)">
-                  {{ visibleMap[selectedRecord.id] ? '隐藏密码' : '显示密码' }}
-                </button>
-                <button type="button" @click="copyText(selectedRecord.id, 'password', selectedRecord.password)">
-                  {{ copiedMap[selectedRecord.id] === 'password' ? '已复制密码' : '复制密码' }}
-                </button>
-                <button type="button" @click="openEdit(selectedRecord)">编辑</button>
-                <button class="danger" type="button" @click="removeItem(selectedRecord.id)">删除</button>
-              </div>
-            </template>
-            <p v-else class="empty">选择账号以查看详情。</p>
-          </aside>
+          <p v-if="!filteredItems.length" class="empty">当前筛选下没有账号记录。</p>
         </section>
       </section>
     </main>
@@ -655,23 +599,18 @@ input,
   font-family: var(--font-mono);
 }
 
-.board {
-  display: grid;
-  gap: 0.8rem;
-}
-
 .accounts-panel {
   padding: 0.62rem;
   display: grid;
   gap: 0.55rem;
-  max-height: 56vh;
+  max-height: 70vh;
   overflow: auto;
 }
 
 .table-head,
 .table-row {
   display: grid;
-  grid-template-columns: 1.22fr 1fr 0.9fr 0.8fr 1.15fr;
+  grid-template-columns: 1.8fr 1fr 0.8fr 1.7fr;
   gap: 0.52rem;
   align-items: center;
 }
@@ -693,7 +632,7 @@ input,
 }
 
 .table-row:hover,
-.table-row.active {
+.table-row:focus-within {
   border-color: color-mix(in srgb, var(--accent-cyan) 65%, var(--line-soft));
   transform: translateY(-1px);
 }
@@ -708,10 +647,45 @@ input,
   font-family: var(--font-mono);
 }
 
+.account-cell {
+  display: grid;
+  gap: 0.36rem;
+}
+
+.account-name {
+  font-size: 0.96rem;
+}
+
+.account-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+}
+
+.meta-pill {
+  max-width: 100%;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--ink-muted);
+  padding: 0.12rem 0.42rem;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+}
+
+.meta-pill.note {
+  font-family: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 26ch;
+}
+
 .row-actions {
   display: flex;
   gap: 0.38rem;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  flex-wrap: wrap;
 }
 
 button {
@@ -734,73 +708,6 @@ button:hover {
   background: linear-gradient(125deg, var(--accent-cyan), #58f0ff);
   color: #01212a;
   font-weight: 700;
-}
-
-.detail-panel {
-  padding: 0.95rem;
-  display: grid;
-  gap: 0.72rem;
-}
-
-.detail-panel h2 {
-  margin: 0;
-  font-family: var(--font-display);
-}
-
-.detail-meta {
-  margin: 0;
-  color: var(--ink-subtle);
-}
-
-.detail-grid {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.detail-grid p {
-  margin: 0;
-  border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  padding: 0.54rem;
-  display: grid;
-  gap: 0.22rem;
-}
-
-.detail-grid span {
-  font-size: 0.76rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-subtle);
-}
-
-.detail-grid em {
-  font-style: normal;
-  color: var(--ink);
-  font-family: var(--font-mono);
-}
-
-.note-box {
-  border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  padding: 0.58rem;
-}
-
-.note-box h3 {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--ink-strong);
-}
-
-.note-box p {
-  margin: 0.45rem 0 0;
-  color: var(--ink-muted);
-  line-height: 1.72;
-}
-
-.detail-actions {
-  display: flex;
-  gap: 0.42rem;
-  flex-wrap: wrap;
 }
 
 .danger {
@@ -899,6 +806,11 @@ button:hover {
 
   .row-actions {
     justify-content: flex-start;
+  }
+
+  .meta-pill.note {
+    max-width: 100%;
+    white-space: normal;
   }
 }
 

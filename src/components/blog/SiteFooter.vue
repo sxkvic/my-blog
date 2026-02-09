@@ -12,7 +12,6 @@ const year = new Date().getFullYear();
       <p class="copy">{{ year }} · 生活、技术、游戏都值得被认真记录。</p>
       <div class="links">
         <a href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
-        <a href="https://store.steampowered.com" target="_blank" rel="noreferrer">Steam</a>
         <RouterLink to="/games">游戏仓</RouterLink>
       </div>
     </div>
