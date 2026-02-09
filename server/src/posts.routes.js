@@ -1,5 +1,6 @@
 import express from 'express';
 import { createPost, deletePost, findPostBySlug, listPosts, updatePost } from './db.js';
+import { requireAuth } from './auth.js';
 
 const router = express.Router();
 
@@ -30,7 +31,7 @@ router.get('/', (_req, res) => {
   res.json(listPosts());
 });
 
-router.post('/', (req, res) => {
+router.post('/', requireAuth, (req, res) => {
   const draft = req.body ?? {};
 
   if (!draft.title || !draft.excerpt || !Array.isArray(draft.content)) {
@@ -53,29 +54,30 @@ router.post('/', (req, res) => {
     content: draft.content,
     media: Array.isArray(draft.media) ? draft.media : [],
     createdByUser: true,
+    ownerUserId: req.auth.userId,
   });
 
   return res.status(201).json(created);
 });
 
-router.put('/:slug', (req, res) => {
+router.put('/:slug', requireAuth, (req, res) => {
   const { slug } = req.params;
   const payload = req.body ?? {};
 
-  const updated = updatePost(slug, payload);
+  const updated = updatePost(slug, payload, req.auth);
   if (!updated) {
-    return res.status(404).json({ message: '文章不存在' });
+    return res.status(404).json({ message: '文章不存在或无权限' });
   }
 
   return res.json(updated);
 });
 
-router.delete('/:slug', (req, res) => {
+router.delete('/:slug', requireAuth, (req, res) => {
   const { slug } = req.params;
-  const deleted = deletePost(slug);
+  const deleted = deletePost(slug, req.auth);
 
   if (!deleted) {
-    return res.status(404).json({ message: '文章不存在' });
+    return res.status(404).json({ message: '文章不存在或无权限' });
   }
 
   return res.status(204).send();

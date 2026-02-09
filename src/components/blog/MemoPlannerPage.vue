@@ -155,19 +155,27 @@ function openEdit(task: MemoTask) {
   showEditor.value = true;
 }
 
-function markDone(id: string) {
+async function markDone(id: string) {
   const current = tasks.value.find((task) => task.id === id);
   if (!current || current.status === 'done') {
     return;
   }
-  setMemoTaskStatus(id, 'done');
+  try {
+    await setMemoTaskStatus(id, 'done');
+  } catch {
+    window.alert('状态更新失败，请稍后重试');
+  }
 }
 
-function revertTodo(id: string) {
-  setMemoTaskStatus(id, 'todo');
+async function revertTodo(id: string) {
+  try {
+    await setMemoTaskStatus(id, 'todo');
+  } catch {
+    window.alert('状态更新失败，请稍后重试');
+  }
 }
 
-function submitTask() {
+async function submitTask() {
   if (!form.title.trim()) {
     window.alert('请先输入待办标题');
     return;
@@ -181,25 +189,32 @@ function submitTask() {
     category: form.category,
   };
 
-  if (!editTargetId.value) {
-    addMemoTask(payload);
-  } else {
-    const old = tasks.value.find((task) => task.id === editTargetId.value);
-    updateMemoTask(editTargetId.value, {
-      ...payload,
-      status: old?.status ?? 'todo',
-    });
+  try {
+    if (!editTargetId.value) {
+      await addMemoTask(payload);
+    } else {
+      const old = tasks.value.find((task) => task.id === editTargetId.value);
+      await updateMemoTask(editTargetId.value, {
+        ...payload,
+        status: old?.status ?? 'todo',
+      });
+    }
+    showEditor.value = false;
+  } catch {
+    window.alert('保存失败，请检查后端服务是否已启动');
   }
-
-  showEditor.value = false;
 }
 
-function removeTask(id: string) {
+async function removeTask(id: string) {
   const ok = window.confirm('确认删除这条待办吗？');
   if (!ok) {
     return;
   }
-  deleteMemoTask(id);
+  try {
+    await deleteMemoTask(id);
+  } catch {
+    window.alert('删除失败，请稍后重试');
+  }
 }
 
 let timer = 0;
@@ -209,8 +224,12 @@ function refreshClock() {
   nowLabel.value = `${now.toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} ${now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
-onMounted(() => {
-  loadTasks();
+onMounted(async () => {
+  try {
+    await loadTasks();
+  } catch {
+    window.alert('待办加载失败，请确认后端 API 可用');
+  }
   refreshClock();
   timer = window.setInterval(refreshClock, 30000);
 });

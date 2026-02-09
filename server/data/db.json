@@ -1,25 +1,4 @@
 {
   "posts": [],
-  "gameAccounts": [
-    {
-      "id": "120927ff-0ee8-4aab-8ae7-586e386b94f0",
-      "game": "星辰变",
-      "server": "冰风宗",
-      "account": "sxkcsd2",
-      "password": "q12345",
-      "role": "李四",
-      "lastLogin": "2026-02-09",
-      "notes": "暂无心得"
-    },
-    {
-      "id": "827768f5-a566-46bb-818d-557f0ae870f8",
-      "game": "星辰变",
-      "server": "重擎山",
-      "account": "sxkcsd",
-      "password": "q12345",
-      "role": "张三",
-      "lastLogin": "2026-02-09",
-      "notes": "暂无心得"
-    }
-  ]
+  "gameAccounts": []
 }

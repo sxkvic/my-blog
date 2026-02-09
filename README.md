@@ -30,11 +30,20 @@ npm run dev
 
 - `GET /api/health`
 - `POST /api/auth/login`
+- `POST /api/auth/register`
 - `GET /api/auth/me`
+- `POST /api/auth/change-password`
+- `GET /api/auth/users` (admin)
+- `POST /api/auth/users` (admin)
 - `GET /api/posts`
 - `POST /api/posts`
 - `PUT /api/posts/:slug`
 - `DELETE /api/posts/:slug`
+- `GET /api/memo-tasks`
+- `POST /api/memo-tasks`
+- `PUT /api/memo-tasks/:id`
+- `PATCH /api/memo-tasks/:id/status`
+- `DELETE /api/memo-tasks/:id`
 - `GET /api/game-accounts`
 - `POST /api/game-accounts`
 - `PUT /api/game-accounts/:id`
@@ -87,18 +96,27 @@ sudo systemctl reload nginx
 
 后续如果你要升级到 MySQL/PostgreSQL，主要替换点是 `server/src/db.js`。
 
-## 游戏仓鉴权
+## 统一登录与数据隔离
 
-游戏仓接口已启用鉴权，必须先登录获取 token 才能访问：
+首页公开访问；`写作台 / 备忘录 / 游戏仓` 需要登录后使用。
 
-- 受保护接口：`/api/game-accounts/*`
-- 登录接口：`POST /api/auth/login`
+登录接口：`POST /api/auth/login`，返回 JWT。  
+携带 `Authorization: Bearer <token>` 后：
+
+- 普通账号只能访问自己创建的数据（文章写作操作、备忘录、游戏仓）
+- `admin` 角色可以访问全部账号的数据
+
+默认会初始化两个账号（首次建库时）：
+
+- 管理员：`ADMIN_USER` / `ADMIN_PASSWORD`
+- 普通用户：`DEFAULT_USER` / `DEFAULT_USER_PASSWORD`
 
 请在部署前设置以下环境变量（不要使用默认值）：
 
 - `ADMIN_USER`
 - `ADMIN_PASSWORD`
+- `DEFAULT_USER`
+- `DEFAULT_USER_PASSWORD`
 - `JWT_SECRET`
 
-管理员密码支持在游戏仓页面内修改（已登录后点击“修改管理员密码”）。
-首次管理员账户由环境变量初始化，仅在 `admin_auth` 表为空时生效。
+用户可在已登录状态下调用 `POST /api/auth/change-password` 修改自己的密码。

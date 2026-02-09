@@ -6,6 +6,7 @@ import { requireVaultAuth } from './auth.js';
 import authRouter from './auth.routes.js';
 import { initDb } from './db.js';
 import gameAccountsRouter from './gameAccounts.routes.js';
+import memoRouter from './memo.routes.js';
 import postsRouter from './posts.routes.js';
 
 const app = express();
@@ -24,6 +25,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/posts', postsRouter);
+app.use('/api/memo-tasks', requireVaultAuth, memoRouter);
 app.use('/api/game-accounts', requireVaultAuth, gameAccountsRouter);
 
 app.use((_req, res) => {

@@ -10,6 +10,8 @@ const DB_FILE = process.env.DB_FILE || path.resolve(__dirname, '../data/app.db')
 const LEGACY_JSON = path.resolve(__dirname, '../data/db.json');
 const DEFAULT_ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-me-now';
+const DEFAULT_USER_NAME = process.env.DEFAULT_USER || 'user';
+const DEFAULT_USER_PASSWORD = process.env.DEFAULT_USER_PASSWORD || 'user123456';
 
 const db = new Database(DB_FILE);
 
@@ -54,7 +56,62 @@ function mapGameAccount(row) {
   };
 }
 
-function migrateFromLegacyJson() {
+function mapMemoTask(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    details: row.details,
+    date: row.date,
+    priority: row.priority,
+    status: row.status,
+    category: row.category,
+  };
+}
+
+const memoSeedTasks = [];
+
+function hasColumn(table, column) {
+  const rows = db.prepare(`PRAGMA table_info(${table})`).all();
+  return rows.some((row) => row.name === column);
+}
+
+function ensureColumn(table, column, definition) {
+  if (!hasColumn(table, column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
+function canAccessOwner(auth, ownerUserId) {
+  if (!auth) {
+    return false;
+  }
+  if (auth.role === 'admin') {
+    return true;
+  }
+  return auth.userId === ownerUserId;
+}
+
+function ensureDefaultUsers() {
+  const adminRow = db.prepare('SELECT id FROM users WHERE username = ?').get(DEFAULT_ADMIN_USER);
+  if (!adminRow) {
+    db.prepare(`
+      INSERT INTO users (username, password_hash, role, created_at, updated_at)
+      VALUES (?, ?, 'admin', datetime('now'), datetime('now'))
+    `).run(DEFAULT_ADMIN_USER, hashPassword(DEFAULT_ADMIN_PASSWORD));
+  }
+
+  const userRow = db.prepare('SELECT id FROM users WHERE username = ?').get(DEFAULT_USER_NAME);
+  if (!userRow) {
+    db.prepare(`
+      INSERT INTO users (username, password_hash, role, created_at, updated_at)
+      VALUES (?, ?, 'user', datetime('now'), datetime('now'))
+    `).run(DEFAULT_USER_NAME, hashPassword(DEFAULT_USER_PASSWORD));
+  }
+
+  return db.prepare('SELECT id FROM users WHERE username = ?').get(DEFAULT_ADMIN_USER).id;
+}
+
+function migrateFromLegacyJson(adminUserId) {
   const postCount = db.prepare('SELECT COUNT(*) AS count FROM posts').get().count;
   const accountCount = db.prepare('SELECT COUNT(*) AS count FROM game_accounts').get().count;
 
@@ -69,18 +126,18 @@ function migrateFromLegacyJson() {
     const insertPost = db.prepare(`
       INSERT INTO posts (
         slug, title, excerpt, channel, category, tags_json, author_id,
-        published_at, read_time, featured, views, content_json, media_json, created_by_user
+        published_at, read_time, featured, views, content_json, media_json, created_by_user, owner_user_id
       ) VALUES (
         @slug, @title, @excerpt, @channel, @category, @tags_json, @author_id,
-        @published_at, @read_time, @featured, @views, @content_json, @media_json, @created_by_user
+        @published_at, @read_time, @featured, @views, @content_json, @media_json, @created_by_user, @owner_user_id
       )
     `);
 
     const insertGame = db.prepare(`
       INSERT INTO game_accounts (
-        id, game, server, account, password, role, last_login, notes
+        id, game, server, account, password, role, last_login, notes, owner_user_id
       ) VALUES (
-        @id, @game, @server, @account, @password, @role, @last_login, @notes
+        @id, @game, @server, @account, @password, @role, @last_login, @notes, @owner_user_id
       )
     `);
 
@@ -101,6 +158,7 @@ function migrateFromLegacyJson() {
           content_json: JSON.stringify(Array.isArray(post.content) ? post.content : []),
           media_json: JSON.stringify(Array.isArray(post.media) ? post.media : []),
           created_by_user: post.createdByUser ? 1 : 0,
+          owner_user_id: adminUserId,
         });
       }
 
@@ -114,6 +172,7 @@ function migrateFromLegacyJson() {
           role: account.role || '未分类',
           last_login: account.lastLogin || new Date().toISOString().slice(0, 10),
           notes: account.notes || '暂无心得',
+          owner_user_id: adminUserId,
         });
       }
     });
@@ -128,6 +187,15 @@ export function initDb() {
   db.pragma('journal_mode = WAL');
 
   db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS posts (
       slug TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -143,6 +211,7 @@ export function initDb() {
       content_json TEXT NOT NULL,
       media_json TEXT NOT NULL,
       created_by_user INTEGER NOT NULL DEFAULT 1,
+      owner_user_id INTEGER,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -156,6 +225,7 @@ export function initDb() {
       role TEXT NOT NULL,
       last_login TEXT NOT NULL,
       notes TEXT NOT NULL,
+      owner_user_id INTEGER,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -166,7 +236,26 @@ export function initDb() {
       password_hash TEXT NOT NULL,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS memo_tasks (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      details TEXT NOT NULL,
+      date TEXT NOT NULL,
+      priority TEXT NOT NULL,
+      status TEXT NOT NULL,
+      category TEXT NOT NULL,
+      owner_user_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
+
+  ensureColumn('posts', 'owner_user_id', 'INTEGER');
+  ensureColumn('game_accounts', 'owner_user_id', 'INTEGER');
+  ensureColumn('memo_tasks', 'owner_user_id', 'INTEGER');
+
+  const adminUserId = ensureDefaultUsers();
 
   const adminRow = db.prepare('SELECT id FROM admin_auth WHERE id = 1').get();
   if (!adminRow) {
@@ -176,7 +265,30 @@ export function initDb() {
     `).run(DEFAULT_ADMIN_USER, hashPassword(DEFAULT_ADMIN_PASSWORD));
   }
 
-  migrateFromLegacyJson();
+  migrateFromLegacyJson(adminUserId);
+
+  db.prepare('UPDATE posts SET owner_user_id = ? WHERE owner_user_id IS NULL').run(adminUserId);
+  db.prepare('UPDATE game_accounts SET owner_user_id = ? WHERE owner_user_id IS NULL').run(adminUserId);
+  db.prepare('UPDATE memo_tasks SET owner_user_id = ? WHERE owner_user_id IS NULL').run(adminUserId);
+
+  const memoCount = db.prepare('SELECT COUNT(*) AS count FROM memo_tasks').get().count;
+  if (memoCount === 0) {
+    const insertMemo = db.prepare(`
+      INSERT INTO memo_tasks (
+        id, title, details, date, priority, status, category, owner_user_id
+      ) VALUES (
+        @id, @title, @details, @date, @priority, @status, @category, @owner_user_id
+      )
+    `);
+
+    const tx = db.transaction(() => {
+      for (const task of memoSeedTasks) {
+        insertMemo.run({ ...task, owner_user_id: adminUserId });
+      }
+    });
+
+    tx();
+  }
 }
 
 export function listPosts() {
@@ -189,14 +301,18 @@ export function findPostBySlug(slug) {
   return row ? mapPost(row) : null;
 }
 
+function findPostRowBySlug(slug) {
+  return db.prepare('SELECT * FROM posts WHERE slug = ?').get(slug);
+}
+
 export function createPost(post) {
   db.prepare(`
     INSERT INTO posts (
       slug, title, excerpt, channel, category, tags_json, author_id,
-      published_at, read_time, featured, views, content_json, media_json, created_by_user
+      published_at, read_time, featured, views, content_json, media_json, created_by_user, owner_user_id
     ) VALUES (
       @slug, @title, @excerpt, @channel, @category, @tags_json, @author_id,
-      @published_at, @read_time, @featured, @views, @content_json, @media_json, @created_by_user
+      @published_at, @read_time, @featured, @views, @content_json, @media_json, @created_by_user, @owner_user_id
     )
   `).run({
     slug: post.slug,
@@ -213,17 +329,19 @@ export function createPost(post) {
     content_json: JSON.stringify(post.content || []),
     media_json: JSON.stringify(post.media || []),
     created_by_user: post.createdByUser ? 1 : 0,
+    owner_user_id: post.ownerUserId,
   });
 
   return findPostBySlug(post.slug);
 }
 
-export function updatePost(slug, payload) {
-  const current = findPostBySlug(slug);
-  if (!current) {
+export function updatePost(slug, payload, auth) {
+  const currentRow = findPostRowBySlug(slug);
+  if (!currentRow || !canAccessOwner(auth, currentRow.owner_user_id)) {
     return null;
   }
 
+  const current = mapPost(currentRow);
   const merged = { ...current, ...payload, slug: current.slug };
 
   db.prepare(`
@@ -263,27 +381,43 @@ export function updatePost(slug, payload) {
   return findPostBySlug(slug);
 }
 
-export function deletePost(slug) {
+export function deletePost(slug, auth) {
+  const row = findPostRowBySlug(slug);
+  if (!row || !canAccessOwner(auth, row.owner_user_id)) {
+    return false;
+  }
+
   const result = db.prepare('DELETE FROM posts WHERE slug = ?').run(slug);
   return result.changes > 0;
 }
 
-export function listGameAccounts() {
-  const rows = db.prepare('SELECT * FROM game_accounts ORDER BY created_at DESC').all();
+export function listGameAccounts(auth) {
+  if (auth?.role === 'admin') {
+    const rows = db.prepare('SELECT * FROM game_accounts ORDER BY created_at DESC').all();
+    return rows.map(mapGameAccount);
+  }
+
+  const rows = db
+    .prepare('SELECT * FROM game_accounts WHERE owner_user_id = ? ORDER BY created_at DESC')
+    .all(auth.userId);
   return rows.map(mapGameAccount);
 }
 
+function findGameAccountRowById(id) {
+  return db.prepare('SELECT * FROM game_accounts WHERE id = ?').get(id);
+}
+
 export function findGameAccountById(id) {
-  const row = db.prepare('SELECT * FROM game_accounts WHERE id = ?').get(id);
+  const row = findGameAccountRowById(id);
   return row ? mapGameAccount(row) : null;
 }
 
 export function createGameAccount(account) {
   db.prepare(`
     INSERT INTO game_accounts (
-      id, game, server, account, password, role, last_login, notes
+      id, game, server, account, password, role, last_login, notes, owner_user_id
     ) VALUES (
-      @id, @game, @server, @account, @password, @role, @last_login, @notes
+      @id, @game, @server, @account, @password, @role, @last_login, @notes, @owner_user_id
     )
   `).run({
     id: account.id,
@@ -294,17 +428,19 @@ export function createGameAccount(account) {
     role: account.role,
     last_login: account.lastLogin,
     notes: account.notes,
+    owner_user_id: account.ownerUserId,
   });
 
   return findGameAccountById(account.id);
 }
 
-export function updateGameAccount(id, payload) {
-  const current = findGameAccountById(id);
-  if (!current) {
+export function updateGameAccount(id, payload, auth) {
+  const currentRow = findGameAccountRowById(id);
+  if (!currentRow || !canAccessOwner(auth, currentRow.owner_user_id)) {
     return null;
   }
 
+  const current = mapGameAccount(currentRow);
   const merged = { ...current, ...payload, id };
 
   db.prepare(`
@@ -332,33 +468,215 @@ export function updateGameAccount(id, payload) {
   return findGameAccountById(id);
 }
 
-export function deleteGameAccount(id) {
+export function deleteGameAccount(id, auth) {
+  const row = findGameAccountRowById(id);
+  if (!row || !canAccessOwner(auth, row.owner_user_id)) {
+    return false;
+  }
+
   const result = db.prepare('DELETE FROM game_accounts WHERE id = ?').run(id);
   return result.changes > 0;
 }
 
-export function verifyAdminCredentials(username, password) {
-  const row = db.prepare('SELECT username, password_hash FROM admin_auth WHERE id = 1').get();
-  if (!row || row.username !== username) {
-    return false;
+export function listMemoTasks(auth) {
+  if (auth?.role === 'admin') {
+    const rows = db.prepare('SELECT * FROM memo_tasks ORDER BY date ASC, created_at DESC').all();
+    return rows.map(mapMemoTask);
   }
-  return verifyPassword(password, row.password_hash);
+
+  const rows = db
+    .prepare('SELECT * FROM memo_tasks WHERE owner_user_id = ? ORDER BY date ASC, created_at DESC')
+    .all(auth.userId);
+  return rows.map(mapMemoTask);
 }
 
-export function updateAdminPassword(username, currentPassword, nextPassword) {
-  const row = db.prepare('SELECT username, password_hash FROM admin_auth WHERE id = 1').get();
-  if (!row || row.username !== username) {
+function findMemoTaskRowById(id) {
+  return db.prepare('SELECT * FROM memo_tasks WHERE id = ?').get(id);
+}
+
+export function findMemoTaskById(id) {
+  const row = findMemoTaskRowById(id);
+  return row ? mapMemoTask(row) : null;
+}
+
+export function createMemoTask(task) {
+  db.prepare(`
+    INSERT INTO memo_tasks (
+      id, title, details, date, priority, status, category, owner_user_id
+    ) VALUES (
+      @id, @title, @details, @date, @priority, @status, @category, @owner_user_id
+    )
+  `).run({
+    id: task.id,
+    title: task.title,
+    details: task.details,
+    date: task.date,
+    priority: task.priority,
+    status: task.status,
+    category: task.category,
+    owner_user_id: task.ownerUserId,
+  });
+
+  return findMemoTaskById(task.id);
+}
+
+export function updateMemoTask(id, payload, auth) {
+  const currentRow = findMemoTaskRowById(id);
+  if (!currentRow || !canAccessOwner(auth, currentRow.owner_user_id)) {
+    return null;
+  }
+
+  const current = mapMemoTask(currentRow);
+  const merged = { ...current, ...payload, id };
+
+  db.prepare(`
+    UPDATE memo_tasks SET
+      title = @title,
+      details = @details,
+      date = @date,
+      priority = @priority,
+      status = @status,
+      category = @category,
+      updated_at = datetime('now')
+    WHERE id = @id
+  `).run({
+    id,
+    title: merged.title,
+    details: merged.details,
+    date: merged.date,
+    priority: merged.priority,
+    status: merged.status,
+    category: merged.category,
+  });
+
+  return findMemoTaskById(id);
+}
+
+export function deleteMemoTask(id, auth) {
+  const row = findMemoTaskRowById(id);
+  if (!row || !canAccessOwner(auth, row.owner_user_id)) {
+    return false;
+  }
+
+  const result = db.prepare('DELETE FROM memo_tasks WHERE id = ?').run(id);
+  return result.changes > 0;
+}
+
+export function findUserByUsername(username) {
+  return db.prepare('SELECT id, username, role, password_hash FROM users WHERE username = ?').get(username);
+}
+
+export function verifyUserCredentials(username, password) {
+  const row = findUserByUsername(username);
+  if (!row) {
+    return null;
+  }
+
+  if (!verifyPassword(password, row.password_hash)) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    username: row.username,
+    role: row.role,
+  };
+}
+
+export function updateUserPassword(userId, currentPassword, nextPassword) {
+  const row = db.prepare('SELECT id, password_hash FROM users WHERE id = ?').get(userId);
+  if (!row) {
     return { ok: false, reason: 'user_not_found' };
   }
+
   if (!verifyPassword(currentPassword, row.password_hash)) {
     return { ok: false, reason: 'invalid_current_password' };
   }
 
   db.prepare(`
-    UPDATE admin_auth
+    UPDATE users
     SET password_hash = ?, updated_at = datetime('now')
-    WHERE id = 1
-  `).run(hashPassword(nextPassword));
+    WHERE id = ?
+  `).run(hashPassword(nextPassword), userId);
 
   return { ok: true };
+}
+
+export function listUsers(auth) {
+  if (auth?.role !== 'admin') {
+    return [];
+  }
+
+  return db
+    .prepare("SELECT id, username, role, created_at AS createdAt FROM users ORDER BY id ASC")
+    .all();
+}
+
+export function createUser(payload, auth) {
+  if (auth?.role !== 'admin') {
+    return null;
+  }
+
+  const username = String(payload.username || '').trim();
+  const password = String(payload.password || '');
+  const role = payload.role === 'admin' ? 'admin' : 'user';
+
+  if (!username || password.length < 8) {
+    return { error: 'invalid_input' };
+  }
+
+  const exists = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+  if (exists) {
+    return { error: 'username_exists' };
+  }
+
+  const result = db.prepare(`
+    INSERT INTO users (username, password_hash, role, created_at, updated_at)
+    VALUES (?, ?, ?, datetime('now'), datetime('now'))
+  `).run(username, hashPassword(password), role);
+
+  return {
+    id: Number(result.lastInsertRowid),
+    username,
+    role,
+  };
+}
+
+export function registerUser(payload) {
+  const username = String(payload.username || '').trim();
+  const password = String(payload.password || '');
+
+  if (!username || password.length < 8) {
+    return { error: 'invalid_input' };
+  }
+
+  const exists = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+  if (exists) {
+    return { error: 'username_exists' };
+  }
+
+  const result = db.prepare(`
+    INSERT INTO users (username, password_hash, role, created_at, updated_at)
+    VALUES (?, ?, 'user', datetime('now'), datetime('now'))
+  `).run(username, hashPassword(password));
+
+  return {
+    id: Number(result.lastInsertRowid),
+    username,
+    role: 'user',
+  };
+}
+
+// Legacy compatibility helpers.
+export function verifyAdminCredentials(username, password) {
+  const user = verifyUserCredentials(username, password);
+  return Boolean(user);
+}
+
+export function updateAdminPassword(username, currentPassword, nextPassword) {
+  const user = findUserByUsername(username);
+  if (!user) {
+    return { ok: false, reason: 'user_not_found' };
+  }
+  return updateUserPassword(user.id, currentPassword, nextPassword);
 }

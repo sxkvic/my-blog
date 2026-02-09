@@ -9,8 +9,8 @@ import {
 
 const router = express.Router();
 
-router.get('/', (_req, res) => {
-  res.json(listGameAccounts());
+router.get('/', (req, res) => {
+  res.json(listGameAccounts(req.auth));
 });
 
 router.post('/', (req, res) => {
@@ -29,6 +29,7 @@ router.post('/', (req, res) => {
     role: payload.role || '未分类',
     lastLogin: payload.lastLogin || new Date().toISOString().slice(0, 10),
     notes: payload.notes || '暂无心得',
+    ownerUserId: req.auth.userId,
   });
 
   return res.status(201).json(created);
@@ -38,9 +39,9 @@ router.put('/:id', (req, res) => {
   const { id } = req.params;
   const payload = req.body ?? {};
 
-  const updated = updateGameAccount(id, payload);
+  const updated = updateGameAccount(id, payload, req.auth);
   if (!updated) {
-    return res.status(404).json({ message: '账号不存在' });
+    return res.status(404).json({ message: '账号不存在或无权限' });
   }
 
   return res.json(updated);
@@ -48,10 +49,10 @@ router.put('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   const { id } = req.params;
-  const deleted = deleteGameAccount(id);
+  const deleted = deleteGameAccount(id, req.auth);
 
   if (!deleted) {
-    return res.status(404).json({ message: '账号不存在' });
+    return res.status(404).json({ message: '账号不存在或无权限' });
   }
 
   return res.status(204).send();

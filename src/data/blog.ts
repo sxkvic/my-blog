@@ -200,48 +200,7 @@ export const posts: BlogPost[] = [
   },
 ];
 
-export const gameAccounts: GameVaultItem[] = [
-  {
-    id: 'g1',
-    game: 'Steam',
-    server: '全球',
-    account: 'neon_player_77',
-    password: 'St3am!2026#Vault',
-    role: '主账号',
-    lastLogin: '2026-02-08',
-    notes: '开启手机令牌，常用设备 2 台。'
-  },
-  {
-    id: 'g2',
-    game: '原神',
-    server: '天空岛',
-    account: 'k_blog_genshin',
-    password: 'Yu@nShen_2FA_01',
-    role: '日常号',
-    lastLogin: '2026-02-07',
-    notes: '深境每月刷新前做阵容记录。'
-  },
-  {
-    id: 'g3',
-    game: '崩坏：星穹铁道',
-    server: '国服',
-    account: 'trail_record_2048',
-    password: 'RailPass#2088',
-    role: '剧情号',
-    lastLogin: '2026-02-06',
-    notes: '主线推进前拍阵容快照，便于回顾。'
-  },
-  {
-    id: 'g4',
-    game: '英雄联盟',
-    server: '艾欧尼亚',
-    account: 'midlane_journal',
-    password: 'LOL_rank!889',
-    role: '排位号',
-    lastLogin: '2026-02-05',
-    notes: '只在周三和周六打排位，避免情绪上头。'
-  },
-];
+export const gameAccounts: GameVaultItem[] = [];
 
 export const featuredPosts = posts.filter((post) => post.featured);
 export const categories = [...new Set(posts.map((post) => post.category))];

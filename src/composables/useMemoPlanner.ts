@@ -1,78 +1,46 @@
 import { ref } from 'vue';
-import { memoSeedTasks, type MemoTask } from '../data/memo';
+import type { MemoTask } from '../data/memo';
+import {
+  createMemoTask as createMemoTaskApi,
+  deleteMemoTask as deleteMemoTaskApi,
+  listMemoTasks as listMemoTasksApi,
+  setMemoTaskStatus as setMemoTaskStatusApi,
+  updateMemoTask as updateMemoTaskApi,
+} from '../services/memoGateway';
 
-const MEMO_KEY = 'neo-memo-tasks';
 const tasks = ref<MemoTask[]>([]);
 const initialized = ref(false);
 
-function cloneSeed() {
-  return memoSeedTasks.map((task) => ({ ...task }));
-}
-
-function loadTasks() {
-  if (initialized.value) {
+async function loadTasks(force = false) {
+  if (initialized.value && !force) {
     return;
   }
 
-  try {
-    const raw = localStorage.getItem(MEMO_KEY);
-    if (!raw) {
-      tasks.value = cloneSeed();
-      localStorage.setItem(MEMO_KEY, JSON.stringify(tasks.value));
-      initialized.value = true;
-      return;
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      tasks.value = cloneSeed();
-    } else {
-      tasks.value = parsed.filter((item) => item && typeof item === 'object') as MemoTask[];
-    }
-  } catch {
-    tasks.value = cloneSeed();
-  }
-
+  tasks.value = await listMemoTasksApi();
   initialized.value = true;
 }
 
-function persist() {
-  localStorage.setItem(MEMO_KEY, JSON.stringify(tasks.value));
-}
-
-function addMemoTask(payload: Omit<MemoTask, 'id' | 'status'>) {
-  const created: MemoTask = {
-    id: `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
-    ...payload,
-    // New tasks always start in todo state.
-    status: 'todo',
-  };
-  tasks.value = [created, ...tasks.value];
-  persist();
+async function addMemoTask(payload: Omit<MemoTask, 'id' | 'status'>) {
+  const created = await createMemoTaskApi(payload);
+  tasks.value = [created, ...tasks.value.filter((task) => task.id !== created.id)];
   return created;
 }
 
-function updateMemoTask(id: string, payload: Omit<MemoTask, 'id'>) {
-  tasks.value = tasks.value.map((task) => (task.id === id ? { id, ...payload } : task));
-  persist();
+async function updateMemoTask(id: string, payload: Omit<MemoTask, 'id'>) {
+  const updated = await updateMemoTaskApi(id, payload);
+  tasks.value = tasks.value.map((task) => (task.id === id ? updated : task));
+  return updated;
 }
 
-function setMemoTaskStatus(id: string, status: MemoTask['status']) {
-  tasks.value = tasks.value.map((task) => {
-    if (task.id !== id) {
-      return task;
-    }
-    return {
-      ...task,
-      status,
-    };
-  });
-  persist();
+async function setMemoTaskStatus(id: string, status: MemoTask['status']) {
+  const updated = await setMemoTaskStatusApi(id, status);
+  tasks.value = tasks.value.map((task) => (task.id === id ? updated : task));
+  return updated;
 }
 
-function deleteMemoTask(id: string) {
+async function deleteMemoTask(id: string) {
+  await deleteMemoTaskApi(id);
   tasks.value = tasks.value.filter((task) => task.id !== id);
-  persist();
 }
 
 export function useMemoPlanner() {

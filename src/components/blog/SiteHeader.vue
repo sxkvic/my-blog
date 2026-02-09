@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
+import { clearVaultToken, getAuthUser, getVaultToken } from '../../services/vaultAuthGateway';
 
 defineProps<{
   siteName: string;
@@ -18,6 +19,8 @@ const links = [
 
 const THEME_KEY = 'neon-theme';
 const isDark = ref(false);
+const currentUser = ref(getAuthUser());
+const isLoggedIn = computed(() => Boolean(getVaultToken() && currentUser.value));
 
 function applyTheme(theme: 'light' | 'neon-dark') {
   document.documentElement.setAttribute('data-theme', theme);
@@ -39,7 +42,14 @@ onMounted(() => {
 
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   applyTheme(prefersDark ? 'neon-dark' : 'light');
+  currentUser.value = getAuthUser();
 });
+
+function logout() {
+  clearVaultToken();
+  currentUser.value = null;
+  window.location.href = '/login';
+}
 </script>
 
 <template>
@@ -60,6 +70,10 @@ onMounted(() => {
         <button class="theme-toggle" type="button" @click="toggleTheme">
           <span class="dot" />
           {{ isDark ? '切换浅色' : 'Neo夜' }}
+        </button>
+        <RouterLink v-if="!isLoggedIn" to="/login" class="auth-link">登录</RouterLink>
+        <button v-else class="auth-link" type="button" @click="logout">
+          {{ currentUser?.username }} / 退出
         </button>
       </div>
     </div>
@@ -144,6 +158,25 @@ onMounted(() => {
 }
 
 .theme-toggle:hover {
+  border-color: var(--accent-cyan);
+}
+
+.auth-link {
+  min-height: 2.05rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.84rem;
+  padding: 0 0.72rem;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.auth-link:hover {
   border-color: var(--accent-cyan);
 }
 

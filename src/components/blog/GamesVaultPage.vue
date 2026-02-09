@@ -13,6 +13,7 @@ import {
   changeVaultPassword,
   clearVaultToken,
   getVaultToken,
+  setAuthUser,
   loginVault,
   setVaultToken,
   verifyVaultSession,
@@ -95,9 +96,8 @@ async function loadAccounts() {
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
     if (message.includes('401')) {
-      authorized.value = false;
       clearVaultToken();
-      vaultItems.value = [];
+      window.location.href = '/login?redirect=/games';
     } else {
       vaultItems.value = [...props.records];
     }
@@ -189,18 +189,18 @@ async function saveForm() {
 async function checkSession() {
   const token = getVaultToken();
   if (!token) {
-    authorized.value = false;
-    authReady.value = true;
+    window.location.href = '/login?redirect=/games';
     return;
   }
 
   try {
-    await verifyVaultSession(token);
+    const user = await verifyVaultSession(token);
+    setAuthUser(user);
     authorized.value = true;
     await loadAccounts();
   } catch {
     clearVaultToken();
-    authorized.value = false;
+    window.location.href = '/login?redirect=/games';
   } finally {
     authReady.value = true;
   }
@@ -217,6 +217,7 @@ async function doLogin() {
   try {
     const data = await loginVault(authForm.username, authForm.password);
     setVaultToken(data.token);
+    setAuthUser(data.user);
     authorized.value = true;
     authForm.password = '';
     await loadAccounts();
