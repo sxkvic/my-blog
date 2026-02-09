@@ -1,22 +1,27 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import type { BlogPost, Author } from '../../data/blog';
+import type { Author, BlogPost } from '../../data/blog';
 
-defineProps<{
+const props = defineProps<{
   post: BlogPost;
   author?: Author;
 }>();
+
+const dateText = computed(() => {
+  return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium' }).format(new Date(props.post.publishedAt));
+});
 </script>
 
 <template>
   <article class="post-card">
-    <RouterLink :to="`/blog/${post.slug}`" class="card-link">
-      <p class="meta">{{ post.category }} · {{ post.readTime }}</p>
-      <h3>{{ post.title }}</h3>
-      <p class="excerpt">{{ post.excerpt }}</p>
+    <RouterLink :to="`/blog/${props.post.slug}`" class="card-link">
+      <p class="meta">{{ props.post.channel }} · {{ props.post.readTime }}</p>
+      <h3>{{ props.post.title }}</h3>
+      <p class="excerpt">{{ props.post.excerpt }}</p>
       <div class="card-footer">
-        <span v-if="author" class="author">{{ author.name }}</span>
-        <time :datetime="post.publishedAt">{{ post.publishedAt }}</time>
+        <span v-if="props.author" class="author">{{ props.author.name }}</span>
+        <time :datetime="props.post.publishedAt">{{ dateText }}</time>
       </div>
     </RouterLink>
   </article>
@@ -24,56 +29,55 @@ defineProps<{
 
 <style scoped>
 .post-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--line-soft);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
   position: relative;
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  overflow: hidden;
+  transition: transform 0.25s ease, border-color 0.25s ease;
 }
 
 .post-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(130deg, transparent 30%, color-mix(in srgb, var(--brand) 12%, transparent));
+  background: linear-gradient(130deg, transparent 40%, color-mix(in srgb, var(--accent-cyan) 16%, transparent));
   opacity: 0;
   transition: opacity 0.25s ease;
 }
 
-.card-link {
-  display: grid;
-  gap: 0.75rem;
-  padding: 1.2rem;
-  text-decoration: none;
-  position: relative;
-  z-index: 1;
-}
-
 .post-card:hover {
   transform: translateY(-4px);
-  border-color: var(--line-strong);
-  box-shadow: 0 14px 28px color-mix(in srgb, var(--ink) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent-cyan) 65%, var(--line-soft));
 }
 
 .post-card:hover::before {
   opacity: 1;
 }
 
+.card-link {
+  display: grid;
+  gap: 0.76rem;
+  text-decoration: none;
+  padding: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
 .meta {
   margin: 0;
-  color: var(--ink-muted);
-  font-size: 0.8rem;
-  letter-spacing: 0.05em;
+  color: var(--accent-orange);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 h3 {
   margin: 0;
-  color: var(--ink-strong);
   font-family: var(--font-display);
-  font-size: clamp(1.2rem, 2.4vw, 1.65rem);
-  line-height: 1.15;
+  color: var(--ink-strong);
+  font-size: clamp(1.16rem, 2.2vw, 1.52rem);
+  line-height: 1.14;
 }
 
 .excerpt {
@@ -82,17 +86,16 @@ h3 {
 }
 
 .card-footer {
+  margin-top: 0.18rem;
   display: flex;
   justify-content: space-between;
-  align-items: center;
   gap: 0.5rem;
-  margin-top: 0.25rem;
-  font-size: 0.9rem;
   color: var(--ink-subtle);
+  font-size: 0.88rem;
 }
 
 .author {
-  font-weight: 600;
   color: var(--ink);
+  font-weight: 700;
 }
 </style>

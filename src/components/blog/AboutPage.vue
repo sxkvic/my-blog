@@ -2,9 +2,7 @@
 import SiteHeader from './SiteHeader.vue';
 import SiteFooter from './SiteFooter.vue';
 
-defineProps<{
-  siteName: string;
-}>();
+defineProps<{ siteName: string }>();
 </script>
 
 <template>
@@ -12,20 +10,18 @@ defineProps<{
     <SiteHeader :site-name="siteName" active-path="/about" />
     <main class="about-main">
       <section class="about-card">
-        <p class="label">About</p>
-        <h1>We write to help teams build with less noise.</h1>
+        <p class="label">ABOUT</p>
+        <h1>我是一个喜欢把过程写下来的开发者。</h1>
         <p>
-          Northline Journal is a practical publication on product design, engineering workflow, and
-          sustainable growth.
+          这个博客不是资讯站，而是我的长期记录系统：生活日记、技术心得、游戏复盘。
         </p>
         <p>
-          Every article is written as a real-world note: short, concrete, and focused on decisions
-          that ship better outcomes.
+          我希望每一篇内容都能回答一个问题：这件事下次还能复用吗？
         </p>
         <div class="facts">
-          <p>Founded: 2021</p>
-          <p>Publishing rhythm: Weekly</p>
-          <p>Headquarters: Remote first</p>
+          <p>建立时间：2021</p>
+          <p>更新节奏：每周 2-4 篇</p>
+          <p>关键词：真诚、复盘、可复用</p>
         </div>
       </section>
     </main>
@@ -36,60 +32,50 @@ defineProps<{
 <style scoped>
 .about-main {
   width: min(980px, calc(100% - 2rem));
-  margin: 1.8rem auto 0;
+  margin: 1.4rem auto 0;
 }
 
 .about-card {
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  padding: clamp(1.2rem, 2.5vw, 2.2rem);
-  background: linear-gradient(140deg, color-mix(in srgb, var(--sand) 70%, white 30%), var(--surface));
+  border: 1px solid var(--line-soft);
+  border-radius: 24px;
+  padding: clamp(1.15rem, 2.5vw, 2.1rem);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--surface) 85%, transparent), color-mix(in srgb, var(--accent-orange) 8%, transparent));
 }
 
 .label {
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.8rem;
-  color: var(--brand-deep);
+  font-size: 0.78rem;
+  color: var(--accent-orange);
 }
 
 h1 {
-  margin: 0.5rem 0 0.8rem;
+  margin: 0.48rem 0 0.8rem;
   font-family: var(--font-display);
   color: var(--ink-strong);
-  font-size: clamp(2rem, 4vw, 3.1rem);
-  line-height: 1;
+  font-size: clamp(2rem, 4.6vw, 3.2rem);
+  line-height: 0.98;
 }
 
 p {
   color: var(--ink-muted);
-  max-width: 65ch;
+  max-width: 64ch;
 }
 
 .facts {
   margin-top: 1.2rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.58rem;
 }
 
 .facts p {
   margin: 0;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-soft);
   border-radius: 999px;
-  padding: 0.35rem 0.68rem;
+  padding: 0.34rem 0.66rem;
   font-size: 0.9rem;
   color: var(--ink);
-}
-
-@media (max-width: 700px) {
-  .about-main {
-    margin-top: 1.2rem;
-  }
-
-  .about-card {
-    border-radius: 22px;
-  }
 }
 </style>

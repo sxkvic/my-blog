@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import type { Author, BlogPost } from '../../data/blog';
+import type { Author, BlogPost, GameVaultItem } from '../../data/blog';
 import SiteHeader from './SiteHeader.vue';
 import SiteFooter from './SiteFooter.vue';
 import PostCard from './PostCard.vue';
@@ -15,6 +15,7 @@ const props = defineProps<{
   authors: Author[];
   categories: string[];
   tags: string[];
+  gameAccounts: GameVaultItem[];
   stats: {
     totalArticles: number;
     totalReaders: string;
@@ -24,6 +25,7 @@ const props = defineProps<{
 
 const latestPosts = computed(() => props.posts.slice(0, 6));
 const topStory = computed(() => props.featuredPosts[0] ?? props.posts[0]);
+const gameSnapshot = computed(() => props.gameAccounts.slice(0, 3));
 
 function authorOf(post: BlogPost) {
   return props.authors.find((author) => author.id === post.authorId);
@@ -35,29 +37,36 @@ function authorOf(post: BlogPost) {
     <SiteHeader :site-name="siteName" active-path="/" />
     <main>
       <section class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Curated Weekly</p>
-          <h1>{{ siteName }}</h1>
+        <div class="hero-main reveal">
+          <p class="kicker">PERSONAL STATION / CN</p>
+          <h1>把生活、技术、游戏都写成可回放的轨迹。</h1>
           <p class="tagline">{{ tagline }}</p>
-          <div class="hero-stats">
-            <p>{{ stats.totalArticles }} articles</p>
-            <p>{{ stats.totalReaders }} monthly readers</p>
-            <p>{{ stats.weeklyIssues }} newsletter issues</p>
+          <div class="metrics">
+            <p>{{ stats.totalArticles }} 篇记录</p>
+            <p>{{ stats.totalReaders }} 月访问</p>
+            <p>{{ stats.weeklyIssues }} 周刊归档</p>
           </div>
         </div>
-        <RouterLink v-if="topStory" :to="`/blog/${topStory.slug}`" class="hero-story">
-          <p class="story-label">Featured Story</p>
+        <RouterLink v-if="topStory" :to="`/blog/${topStory.slug}`" class="hero-side reveal delay-1">
+          <p class="side-label">本周主打</p>
           <h2>{{ topStory.title }}</h2>
           <p>{{ topStory.excerpt }}</p>
-          <span>Read feature</span>
+          <span>打开文章 →</span>
         </RouterLink>
+      </section>
+
+      <section class="ticker reveal delay-2" aria-label="滚动标签">
+        <div class="ticker-inner">
+          <span v-for="tag in tags" :key="tag">#{{ tag }}</span>
+          <span v-for="tag in tags" :key="`repeat-${tag}`">#{{ tag }}</span>
+        </div>
       </section>
 
       <section class="content-grid">
         <section class="main-column">
           <header class="section-head">
-            <h2>Latest Articles</h2>
-            <RouterLink to="/blog">View all</RouterLink>
+            <h2>最新记录</h2>
+            <RouterLink to="/blog">查看全部</RouterLink>
           </header>
           <div class="posts-grid">
             <PostCard
@@ -70,29 +79,32 @@ function authorOf(post: BlogPost) {
         </section>
 
         <aside class="side-column">
-          <section class="panel">
-            <h3>Categories</h3>
+          <section class="panel reveal delay-1">
+            <h3>栏目导航</h3>
             <div class="chips">
-              <RouterLink v-for="category in categories" :key="category" to="/blog">
-                {{ category }}
-              </RouterLink>
+              <RouterLink to="/blog">日记 / 技术 / 游戏心得</RouterLink>
+              <RouterLink to="/games">游戏账号仓</RouterLink>
             </div>
           </section>
 
-          <section class="panel">
-            <h3>Popular Tags</h3>
-            <div class="chips chips-soft">
-              <RouterLink v-for="tag in tags" :key="tag" to="/blog">#{{ tag }}</RouterLink>
+          <section class="panel reveal delay-2">
+            <h3>游戏快照</h3>
+            <div class="game-list">
+              <article v-for="item in gameSnapshot" :key="item.id" class="game-item">
+                <p class="game-title">{{ item.game }} · {{ item.server }}</p>
+                <p>{{ item.role }}</p>
+              </article>
             </div>
+            <RouterLink class="game-link" to="/games">进入完整游戏仓</RouterLink>
           </section>
 
-          <section class="panel newsletter">
-            <h3>Newsletter</h3>
+          <section class="panel newsletter reveal delay-3">
+            <h3>订阅更新</h3>
             <p>{{ newsletterText }}</p>
-            <form class="subscribe" action="#" method="post">
-              <label for="email" class="sr-only">Email</label>
-              <input id="email" type="email" placeholder="you@domain.com" required />
-              <button type="submit">Subscribe</button>
+            <form class="subscribe" action="#" method="post" @submit.prevent>
+              <label for="email" class="sr-only">邮箱</label>
+              <input id="email" type="email" placeholder="name@email.com" required />
+              <button type="submit">订阅</button>
             </form>
           </section>
         </aside>
@@ -104,122 +116,142 @@ function authorOf(post: BlogPost) {
 
 <style scoped>
 main {
-  width: min(1120px, calc(100% - 2rem));
-  margin: 1.8rem auto 0;
+  width: min(1180px, calc(100% - 2rem));
+  margin: 1.4rem auto 0;
   display: grid;
-  gap: 2.3rem;
+  gap: 1.1rem;
 }
 
 .hero {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: 1.2fr 0.8fr;
   gap: 1rem;
-  align-items: stretch;
 }
 
-.hero-copy,
-.hero-story {
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  background: var(--surface);
-  padding: 1.7rem;
+.hero-main,
+.hero-side {
+  border-radius: 24px;
+  border: 1px solid var(--line-soft);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--surface) 82%, transparent), color-mix(in srgb, var(--panel-ink) 10%, transparent));
+  padding: 1.4rem;
   position: relative;
   overflow: hidden;
 }
 
-.hero-copy::before,
-.hero-story::before {
+.hero-main::after,
+.hero-side::after {
   content: '';
   position: absolute;
   width: 180px;
   height: 180px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--brand) 18%, transparent);
-  filter: blur(1px);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-cyan) 24%, transparent);
+  right: -60px;
   top: -70px;
-  right: -30px;
+  filter: blur(8px);
 }
 
-.eyebrow {
+.kicker {
   margin: 0;
-  text-transform: uppercase;
+  color: var(--accent-orange);
   letter-spacing: 0.08em;
-  color: var(--brand-deep);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
 }
 
 h1 {
-  margin: 0.2rem 0 0;
+  margin: 0.4rem 0 0;
   font-family: var(--font-display);
-  font-size: clamp(2rem, 4.6vw, 3.8rem);
-  line-height: 1;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 0.95;
   color: var(--ink-strong);
+  max-width: 14ch;
 }
 
 .tagline {
-  margin: 0.9rem 0 0;
+  margin-top: 0.8rem;
   color: var(--ink-muted);
   max-width: 52ch;
 }
 
-.hero-stats {
+.metrics {
+  margin-top: 1rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.8rem;
-  margin-top: 1rem;
+  gap: 0.5rem;
 }
 
-.hero-stats p {
+.metrics p {
   margin: 0;
-  border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--line-soft);
+  padding: 0.34rem 0.66rem;
   color: var(--ink-subtle);
-  background: color-mix(in srgb, var(--surface) 70%, white 30%);
+  font-size: 0.9rem;
 }
 
-.hero-story {
+.hero-side {
   text-decoration: none;
   display: grid;
   align-content: start;
-  gap: 0.8rem;
-  transition: border-color 0.25s ease, transform 0.25s ease;
+  gap: 0.75rem;
+  transition: transform 0.26s ease, border-color 0.26s ease;
 }
 
-.hero-story:hover {
-  border-color: var(--brand-deep);
-  transform: translateY(-3px);
+.hero-side:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--accent-cyan) 60%, var(--line-soft));
 }
 
-.story-label {
+.side-label {
   margin: 0;
   color: var(--ink-subtle);
-  text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-size: 0.74rem;
 }
 
-.hero-story h2 {
+.hero-side h2 {
   margin: 0;
-  color: var(--ink-strong);
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 2.7vw, 2.2rem);
-  line-height: 1.12;
+  color: var(--ink-strong);
+  font-size: clamp(1.5rem, 2.8vw, 2.2rem);
+  line-height: 1.05;
 }
 
-.hero-story p {
+.hero-side p {
   margin: 0;
   color: var(--ink-muted);
 }
 
-.hero-story span {
-  color: var(--brand-deep);
+.hero-side span {
+  color: var(--accent-cyan);
   font-weight: 700;
+}
+
+.ticker {
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+}
+
+.ticker-inner {
+  display: flex;
+  width: max-content;
+  gap: 1.2rem;
+  padding: 0.55rem 0.9rem;
+  color: var(--ink-muted);
+  animation: move 20s linear infinite;
+}
+
+@keyframes move {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 
 .content-grid {
   display: grid;
-  grid-template-columns: 1.5fr 0.7fr;
+  grid-template-columns: 1.45fr 0.72fr;
   gap: 1rem;
 }
 
@@ -232,19 +264,18 @@ h1 {
 .section-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  padding: 0 0.2rem;
+  align-items: center;
+  padding: 0 0.1rem;
 }
 
 .section-head h2 {
-  margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.4rem, 2.2vw, 1.9rem);
+  font-size: clamp(1.4rem, 2.3vw, 2rem);
 }
 
 .section-head a {
-  color: var(--brand-deep);
   text-decoration: none;
+  color: var(--accent-cyan);
   font-weight: 600;
 }
 
@@ -255,9 +286,9 @@ h1 {
 }
 
 .panel {
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
   padding: 1rem;
 }
 
@@ -268,28 +299,51 @@ h1 {
 }
 
 .chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: grid;
+  gap: 0.6rem;
 }
 
 .chips a {
   text-decoration: none;
-  font-size: 0.88rem;
-  color: var(--ink);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 0.6rem 0.7rem;
 }
 
-.chips-soft a {
-  background: color-mix(in srgb, var(--brand) 14%, white 86%);
-  border-color: transparent;
+.game-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.game-item {
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 0.62rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.game-title {
+  font-weight: 700;
+  color: var(--ink-strong);
+}
+
+.game-item p {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.game-link {
+  margin-top: 0.75rem;
+  display: inline-block;
+  color: var(--accent-cyan);
+  text-decoration: none;
+  font-weight: 600;
 }
 
 .newsletter p {
-  margin: 0 0 0.9rem;
   color: var(--ink-muted);
+  margin: 0 0 0.8rem;
 }
 
 .subscribe {
@@ -298,52 +352,54 @@ h1 {
 }
 
 .subscribe input {
-  width: 100%;
-  min-height: 2.5rem;
-  border-radius: 12px;
+  min-height: 2.4rem;
+  border-radius: 10px;
   border: 1px solid var(--line-strong);
-  padding: 0 0.8rem;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  color: var(--ink-strong);
+  padding: 0 0.72rem;
   font: inherit;
-  background: color-mix(in srgb, var(--surface) 80%, white 20%);
 }
 
 .subscribe button {
-  min-height: 2.5rem;
-  border-radius: 12px;
+  min-height: 2.4rem;
+  border-radius: 10px;
   border: 0;
-  background: var(--brand-deep);
-  color: white;
   font: inherit;
+  color: #00161d;
+  background: var(--accent-cyan);
+  font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.2s ease;
 }
 
-.subscribe button:hover {
-  opacity: 0.9;
+.reveal {
+  animation: reveal 0.65s ease both;
 }
 
-@media (max-width: 1000px) {
-  .hero {
-    grid-template-columns: 1fr;
-  }
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
 
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1020px) {
+  .hero,
   .content-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 760px) {
-  main {
-    margin-top: 1.2rem;
-  }
-
   .posts-grid {
     grid-template-columns: 1fr;
   }
 
-  .hero-copy,
-  .hero-story {
-    border-radius: 22px;
+  .hero-main,
+  .hero-side {
+    border-radius: 18px;
   }
 }
 </style>

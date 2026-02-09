@@ -5,11 +5,14 @@ export interface Author {
   avatar: string;
 }
 
+export type Channel = '日记' | '技术心得' | '游戏心得';
+
 export interface BlogPost {
   slug: string;
   title: string;
   excerpt: string;
   content: string[];
+  channel: Channel;
   category: string;
   tags: string[];
   authorId: string;
@@ -19,191 +22,233 @@ export interface BlogPost {
   views: number;
 }
 
+export interface GameVaultItem {
+  id: string;
+  game: string;
+  server: string;
+  account: string;
+  password: string;
+  role: string;
+  lastLogin: string;
+  notes: string;
+}
+
 export const siteData = {
-  name: 'Northline Journal',
-  tagline: 'Design, engineering, and practical growth notes for modern makers.',
-  newsletterText: 'Join 28,000+ readers and get one useful issue every Friday.',
+  name: '霓虹日志',
+  tagline: '写生活、写代码、写游戏，做一个有记忆的数字基地。',
+  newsletterText: '每周日发送一封总结邮件：本周复盘 + 技术碎片 + 游戏记录。',
 };
 
 export const authors: Author[] = [
-  {
-    id: 'maya-chen',
-    name: 'Maya Chen',
-    role: 'Editor in Chief',
-    avatar: 'MC',
-  },
-  {
-    id: 'liam-park',
-    name: 'Liam Park',
-    role: 'Product Writer',
-    avatar: 'LP',
-  },
-  {
-    id: 'sofia-lin',
-    name: 'Sofia Lin',
-    role: 'Design Lead',
-    avatar: 'SL',
-  },
+  { id: 'kai', name: 'K', role: '站长 / 前端工程师', avatar: 'K' },
+  { id: 'lin', name: '林木', role: '技术编辑', avatar: 'LM' },
+  { id: 'yuan', name: '远山', role: '生活观察员', avatar: 'YS' },
 ];
 
 export const posts: BlogPost[] = [
   {
-    slug: 'editorial-systems-for-fast-teams',
-    title: 'Editorial Systems for Fast Teams',
-    excerpt: 'How small teams publish consistently without killing quality.',
-    category: 'Workflow',
-    tags: ['Operations', 'Publishing', 'Team'],
-    authorId: 'maya-chen',
-    publishedAt: '2026-01-28',
-    readTime: '8 min read',
+    slug: 'rainy-night-debug-log',
+    title: '雨夜排错记：我和一个幽灵 bug 的 3 小时',
+    excerpt: '一次看似随机的线上报错，最后竟然是时区与缓存双重叠加。',
+    channel: '日记',
+    category: '生活开发',
+    tags: ['排错', '复盘', '真实记录'],
+    authorId: 'kai',
+    publishedAt: '2026-02-04',
+    readTime: '7 分钟',
     featured: true,
-    views: 4120,
+    views: 1830,
     content: [
-      'Most content teams fail because they optimize for volume before creating a repeatable system. A strong workflow starts with clear intent for each article.',
-      'Build one lightweight brief template and force every idea through it. This narrows scope and helps each writer align on angle, audience, and expected output.',
-      'Use editorial checkpoints with fixed owners. A short review loop protects quality while avoiding endless back and forth that slows shipping.',
-      'Finally, run monthly retrospectives around outcomes, not output. Track what changed for readers, and remove formats that look busy but do not move core metrics.'
+      '晚上 10 点收到告警的时候，我本来只想看一眼就睡，结果越看越不对劲。错误日志每 20 分钟出现一次，像被谁设置了定时器。',
+      '第一轮排查把请求链路和接口都看了一遍，没有明显异常。直到我对比 UTC 时间戳和业务时间，才发现缓存键里混入了本地时区。',
+      '修复后我补了一条单测，并把缓存策略写进团队文档。这个 bug 提醒我：很多线上事故不是难在代码，而是难在边界条件。',
     ],
   },
   {
-    slug: 'building-a-reader-first-homepage',
-    title: 'Building a Reader First Homepage',
-    excerpt: 'Design decisions that make blog homepages easier to scan and trust.',
-    category: 'Design',
-    tags: ['UX', 'Homepage', 'Content'],
-    authorId: 'sofia-lin',
-    publishedAt: '2026-01-22',
-    readTime: '6 min read',
+    slug: 'vite-vue-split-strategy',
+    title: 'Vite + Vue 项目拆分策略：从单体到可维护架构',
+    excerpt: '分享我在个人博客里实践的目录与模块拆分方案。',
+    channel: '技术心得',
+    category: '前端工程化',
+    tags: ['Vite', 'Vue3', '架构'],
+    authorId: 'lin',
+    publishedAt: '2026-02-02',
+    readTime: '10 分钟',
     featured: true,
-    views: 3670,
+    views: 2614,
     content: [
-      'A homepage is not a gallery. It is a map. Readers should know where to go in under ten seconds.',
-      'Lead with one editorial promise, then group content by reader intent. This is more useful than sorting by date alone.',
-      'Use strong typography contrast for hierarchy. When titles and metadata blend together, users skim less and bounce more quickly.',
-      'A newsletter block works better when it is contextual. Place it after a valuable section, so people subscribe after trust is created.'
+      '小项目很容易越写越乱，原因通常不是功能多，而是边界不清。页面、组件、数据、路由混在一起，后期改一处动全身。',
+      '我的做法是先划分稳定层：数据模型、页面容器、可复用组件。页面容器只做编排，不写复杂业务。',
+      '当目录变得清晰，迭代速度会明显提升。你会发现“加一个栏目”不再是重构级别的工作。',
     ],
   },
   {
-    slug: 'ship-better-with-weekly-design-reviews',
-    title: 'Ship Better with Weekly Design Reviews',
-    excerpt: 'A practical review ritual that raises quality without slowing delivery.',
-    category: 'Product',
-    tags: ['Review', 'Team', 'Design'],
-    authorId: 'sofia-lin',
-    publishedAt: '2026-01-18',
-    readTime: '7 min read',
+    slug: 'my-weekend-walk-map',
+    title: '周末散步地图：我在城市里找回注意力的方式',
+    excerpt: '不带耳机散步 90 分钟，我记录了 5 个意外收获。',
+    channel: '日记',
+    category: '个人生活',
+    tags: ['散步', '专注力', '慢生活'],
+    authorId: 'yuan',
+    publishedAt: '2026-01-29',
+    readTime: '5 分钟',
     featured: false,
-    views: 2940,
+    views: 1120,
     content: [
-      'Teams often treat design review as approval theater. It should be a decision engine with focused tradeoffs and clear outcomes.',
-      'Cap each review at three decisions. This constraint keeps discussions tactical and lowers the chance of drifting into abstract critique.',
-      'Record one sentence per decision and attach owner plus deadline. Captured accountability matters more than polished meeting notes.',
-      'Over time, these compact reviews create shared taste and reduce rewrite cycles across design and engineering.'
+      '这一周我被消息和会议切得很碎，周末决定只做一件事：沿着河道走 90 分钟。',
+      '不听播客，不刷手机，反而更容易把脑子里的噪音清掉。很多卡住的想法，会在走路时自动拼起来。',
+      '后来我把这段路线做成了“恢复路线”，当我觉得焦躁时就去走一次。',
     ],
   },
   {
-    slug: 'content-analytics-that-actually-matter',
-    title: 'Content Analytics that Actually Matter',
-    excerpt: 'A simple scorecard for measuring impact beyond page views.',
-    category: 'Growth',
-    tags: ['Analytics', 'SEO', 'Retention'],
-    authorId: 'liam-park',
-    publishedAt: '2026-01-12',
-    readTime: '9 min read',
+    slug: 'component-animation-practice',
+    title: '让组件“会呼吸”：我常用的 4 种动效节奏',
+    excerpt: '不是越多动画越高级，关键是让信息层级被感知。',
+    channel: '技术心得',
+    category: '交互动效',
+    tags: ['CSS', '动效', 'UI'],
+    authorId: 'lin',
+    publishedAt: '2026-01-27',
+    readTime: '8 分钟',
     featured: false,
-    views: 2488,
+    views: 1986,
     content: [
-      'Page views are useful but incomplete. They capture attention, not value. Teams need deeper signals to guide editorial strategy.',
-      'Track completion rate, return visits, and assisted signups. Together, these metrics reveal whether content is creating meaningful behavior change.',
-      'Use a monthly scorecard that ranks articles by business contribution. This helps prioritize updates and retire weak legacy pages.',
-      'When analysts and editors share one scorecard, decision speed improves and experiments become easier to compare.'
+      '页面加载动画的作用不是炫技，而是告诉用户“先看哪里”。',
+      '我习惯把动效分成进入、悬停、状态切换三层，每层只做一个动作，避免互相抢戏。',
+      '当你把动画看成信息引导工具，界面会更像产品，而不是模板。',
     ],
   },
   {
-    slug: 'the-case-for-opinionated-design-tokens',
-    title: 'The Case for Opinionated Design Tokens',
-    excerpt: 'Why fewer tokens and stronger defaults create better interfaces.',
-    category: 'Design',
-    tags: ['Design System', 'CSS', 'Frontend'],
-    authorId: 'sofia-lin',
-    publishedAt: '2026-01-05',
-    readTime: '5 min read',
+    slug: 'elden-ring-build-notes',
+    title: '艾尔登法环二周目：敏信混合流配装心得',
+    excerpt: '记录本周的武器组合、符文路线和 Boss 失误点。',
+    channel: '游戏心得',
+    category: '动作 RPG',
+    tags: ['法环', 'Build', 'Boss'],
+    authorId: 'kai',
+    publishedAt: '2026-01-24',
+    readTime: '6 分钟',
     featured: false,
-    views: 2214,
+    views: 3220,
     content: [
-      'Design systems fail when they expose too much freedom. Teams spend time debating options instead of shipping coherent interfaces.',
-      'Start with opinionated defaults for spacing, typography, and color. Fewer choices force consistency and reduce review noise.',
-      'Reserve escape hatches for rare cases with documented rationale. Uncontrolled overrides are a common source of visual debt.',
-      'Strong token governance creates faster implementation and clearer product identity across pages and teams.'
+      '这套配装核心是“快切 + 中距离压制”，优点是容错高，缺点是蓝耗明显。',
+      '打女武神时我最大的问题不是输出，而是贪刀。把节奏拆成两段后，胜率立刻提升。',
+      '游戏心得和技术总结很像：先识别变量，再做最小闭环验证。',
     ],
   },
   {
-    slug: 'writing-technical-posts-readers-finish',
-    title: 'Writing Technical Posts Readers Finish',
-    excerpt: 'Structure patterns that keep long-form technical writing readable.',
-    category: 'Writing',
-    tags: ['Docs', 'Writing', 'Clarity'],
-    authorId: 'maya-chen',
-    publishedAt: '2025-12-28',
-    readTime: '10 min read',
+    slug: 'obsidian-daily-template',
+    title: '我的 Obsidian 日记模板：一页搞定记录与复盘',
+    excerpt: '分享我每天都在用的结构，包含心情、任务、灵感和总结。',
+    channel: '日记',
+    category: '工具流',
+    tags: ['Obsidian', '模板', '效率'],
+    authorId: 'yuan',
+    publishedAt: '2026-01-20',
+    readTime: '4 分钟',
     featured: false,
-    views: 3141,
+    views: 890,
     content: [
-      'Technical posts often lose readers because they front-load complexity without showing practical payoff.',
-      'Open with the concrete problem and expected result. This helps readers decide quickly if the article is relevant to their work.',
-      'Use short section loops: idea, example, takeaway. Repeat this rhythm and readers retain more of the core argument.',
-      'End with implementation steps and known tradeoffs. Clarity builds trust and increases the chance of sharing.'
+      '我把日记分成四格：今天发生了什么、今天完成了什么、今天想到什么、明天只做哪一件事。',
+      '核心目标不是写很多，而是保证明天回看时有价值。',
+      '长期写下来，你会发现“情绪”和“执行力”是可以被观测的。',
     ],
   },
   {
-    slug: 'launch-checklist-for-small-product-updates',
-    title: 'Launch Checklist for Small Product Updates',
-    excerpt: 'A lean launch process for teams shipping every week.',
-    category: 'Product',
-    tags: ['Launch', 'QA', 'Operations'],
-    authorId: 'liam-park',
-    publishedAt: '2025-12-19',
-    readTime: '6 min read',
+    slug: 'api-cache-checklist',
+    title: '接口缓存上线前检查清单（可直接复用）',
+    excerpt: '一份我在项目中反复复用的缓存检查清单。',
+    channel: '技术心得',
+    category: '后端协作',
+    tags: ['API', '缓存', 'Checklist'],
+    authorId: 'lin',
+    publishedAt: '2026-01-17',
+    readTime: '9 分钟',
     featured: false,
-    views: 1876,
+    views: 1540,
     content: [
-      'Small updates still deserve a launch routine. Without one, teams miss edge cases and lose confidence in frequent releases.',
-      'Use a checklist with owner names, rollback notes, and communication copy. Keep it short enough to run every week.',
-      'Post-launch monitoring should focus on one primary metric and two guardrails. This limits confusion in the first hour.',
-      'A disciplined checklist reduces fire drills and makes weekly shipping sustainable for lean teams.'
+      '缓存策略最怕“看起来没问题”。很多问题只在高并发和异常链路里出现。',
+      '上线前我会固定检查 7 项，包括键设计、过期策略、主动失效与监控指标。',
+      '这份清单救过我很多次，特别是在需求变化非常快的阶段。',
     ],
   },
   {
-    slug: 'from-static-blog-to-content-engine',
-    title: 'From Static Blog to Content Engine',
-    excerpt: 'How to evolve a simple blog into a scalable content product.',
-    category: 'Growth',
-    tags: ['Roadmap', 'Platform', 'SEO'],
-    authorId: 'maya-chen',
-    publishedAt: '2025-12-10',
-    readTime: '8 min read',
+    slug: 'steam-weekly-log',
+    title: 'Steam 本周游玩日志：3 个游戏，2 个惊喜，1 个踩坑',
+    excerpt: '把娱乐时间也做成可回顾的记录，避免“玩了但没留下什么”。',
+    channel: '游戏心得',
+    category: '周记',
+    tags: ['Steam', '周报', '推荐'],
+    authorId: 'kai',
+    publishedAt: '2026-01-15',
+    readTime: '5 分钟',
     featured: false,
-    views: 2650,
+    views: 2090,
     content: [
-      'A static blog is a good start, but growth requires systems for discovery, refresh, and distribution.',
-      'Define content tiers: flagship guides, recurring briefs, and tactical updates. Each tier supports different user needs.',
-      'Build a refresh calendar for top-performing pages. Updating proven assets often beats publishing entirely new content.',
-      'As structure matures, your blog becomes a content engine that compounds traffic, trust, and product adoption.'
+      '这周玩的三款里，一款机制很惊艳但后期重复度高，一款叙事短小但后劲十足。',
+      '我开始给每款游戏打“情绪分”和“重复游玩分”，比单纯评分更有参考价值。',
+      '把游戏体验写下来，会让你更清楚自己真正喜欢什么。',
     ],
   },
 ];
 
+export const gameAccounts: GameVaultItem[] = [
+  {
+    id: 'g1',
+    game: 'Steam',
+    server: '全球',
+    account: 'neon_player_77',
+    password: 'St3am!2026#Vault',
+    role: '主账号',
+    lastLogin: '2026-02-08',
+    notes: '开启手机令牌，常用设备 2 台。'
+  },
+  {
+    id: 'g2',
+    game: '原神',
+    server: '天空岛',
+    account: 'k_blog_genshin',
+    password: 'Yu@nShen_2FA_01',
+    role: '日常号',
+    lastLogin: '2026-02-07',
+    notes: '深境每月刷新前做阵容记录。'
+  },
+  {
+    id: 'g3',
+    game: '崩坏：星穹铁道',
+    server: '国服',
+    account: 'trail_record_2048',
+    password: 'RailPass#2088',
+    role: '剧情号',
+    lastLogin: '2026-02-06',
+    notes: '主线推进前拍阵容快照，便于回顾。'
+  },
+  {
+    id: 'g4',
+    game: '英雄联盟',
+    server: '艾欧尼亚',
+    account: 'midlane_journal',
+    password: 'LOL_rank!889',
+    role: '排位号',
+    lastLogin: '2026-02-05',
+    notes: '只在周三和周六打排位，避免情绪上头。'
+  },
+];
+
 export const featuredPosts = posts.filter((post) => post.featured);
-
 export const categories = [...new Set(posts.map((post) => post.category))];
-
-export const popularTags = [...new Set(posts.flatMap((post) => post.tags))].slice(0, 8);
+export const channels: Channel[] = ['日记', '技术心得', '游戏心得'];
+export const popularTags = [...new Set(posts.flatMap((post) => post.tags))].slice(0, 10);
 
 export const siteStats = {
   totalArticles: posts.length,
-  totalReaders: '128k',
-  weeklyIssues: 142,
+  totalReaders: '9.8k',
+  weeklyIssues: 58,
 };
+
+export const diaryPosts = posts.filter((post) => post.channel === '日记');
+export const techPosts = posts.filter((post) => post.channel === '技术心得');
+export const gamePosts = posts.filter((post) => post.channel === '游戏心得');
 
 export function getPostBySlug(slug: string) {
   return posts.find((post) => post.slug === slug);
@@ -213,8 +258,6 @@ export function getAuthorById(authorId: string) {
   return authors.find((author) => author.id === authorId);
 }
 
-export function getRelatedPosts(slug: string, category: string) {
-  return posts
-    .filter((post) => post.slug !== slug && post.category === category)
-    .slice(0, 3);
+export function getRelatedPosts(slug: string, channel: Channel) {
+  return posts.filter((post) => post.slug !== slug && post.channel === channel).slice(0, 3);
 }

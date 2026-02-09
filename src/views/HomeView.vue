@@ -4,6 +4,7 @@ import {
   authors,
   categories,
   featuredPosts,
+  gameAccounts,
   popularTags,
   posts,
   siteData,
@@ -21,6 +22,7 @@ import {
     :authors="authors"
     :categories="categories"
     :tags="popularTags"
+    :game-accounts="gameAccounts"
     :stats="siteStats"
   />
 </template>

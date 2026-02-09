@@ -1,16 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import type { Author, BlogPost } from '../../data/blog';
 import SiteHeader from './SiteHeader.vue';
 import SiteFooter from './SiteFooter.vue';
 import PostCard from './PostCard.vue';
 
-defineProps<{
+const props = defineProps<{
   siteName: string;
   post: BlogPost;
   author?: Author;
   relatedPosts: BlogPost[];
 }>();
+
+const dateText = computed(() => {
+  return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'long' }).format(new Date(props.post.publishedAt));
+});
 </script>
 
 <template>
@@ -19,12 +24,12 @@ defineProps<{
     <main class="post-main">
       <article class="post-wrap">
         <header class="post-header">
-          <p class="topic">{{ post.category }}</p>
+          <p class="topic">{{ post.channel }} · {{ post.category }}</p>
           <h1>{{ post.title }}</h1>
           <p class="deck">{{ post.excerpt }}</p>
           <div class="meta-row">
-            <p v-if="author">By {{ author.name }} · {{ author.role }}</p>
-            <p>{{ post.publishedAt }} · {{ post.readTime }} · {{ post.views.toLocaleString() }} views</p>
+            <p v-if="author">作者：{{ author.name }} · {{ author.role }}</p>
+            <p>{{ dateText }} · {{ post.readTime }} · {{ post.views.toLocaleString() }} 阅读</p>
           </div>
         </header>
 
@@ -39,7 +44,7 @@ defineProps<{
 
       <section v-if="relatedPosts.length" class="related">
         <header>
-          <h2>Related Reading</h2>
+          <h2>相关阅读</h2>
         </header>
         <div class="related-grid">
           <PostCard v-for="related in relatedPosts" :key="related.slug" :post="related" />
@@ -52,38 +57,38 @@ defineProps<{
 
 <style scoped>
 .post-main {
-  width: min(1120px, calc(100% - 2rem));
-  margin: 1.6rem auto 0;
+  width: min(1180px, calc(100% - 2rem));
+  margin: 1.4rem auto 0;
   display: grid;
-  gap: 1.5rem;
+  gap: 1.2rem;
 }
 
 .post-wrap {
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  background: var(--surface);
-  padding: clamp(1rem, 2.2vw, 2rem);
+  border: 1px solid var(--line-soft);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  padding: clamp(1rem, 2.5vw, 2rem);
 }
 
 .post-header {
-  padding-bottom: 1.2rem;
+  padding-bottom: 1.15rem;
   border-bottom: 1px dashed var(--line-strong);
 }
 
 .topic {
   margin: 0;
-  color: var(--brand-deep);
+  color: var(--accent-orange);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
 }
 
 h1 {
-  margin: 0.4rem 0 0.65rem;
+  margin: 0.45rem 0 0.65rem;
   font-family: var(--font-display);
   color: var(--ink-strong);
-  font-size: clamp(2rem, 4vw, 3.1rem);
-  line-height: 1;
+  font-size: clamp(2rem, 4.6vw, 3.3rem);
+  line-height: 0.98;
 }
 
 .deck {
@@ -93,11 +98,11 @@ h1 {
 }
 
 .meta-row {
-  margin-top: 1rem;
+  margin-top: 0.95rem;
   display: grid;
-  gap: 0.3rem;
+  gap: 0.25rem;
   color: var(--ink-subtle);
-  font-size: 0.94rem;
+  font-size: 0.93rem;
 }
 
 .meta-row p {
@@ -107,36 +112,36 @@ h1 {
 .post-content {
   margin-top: 1.2rem;
   display: grid;
-  gap: 1rem;
+  gap: 0.95rem;
 }
 
 .post-content p {
   margin: 0;
   color: var(--ink);
   max-width: 72ch;
-  line-height: 1.76;
-  font-size: clamp(1rem, 1.3vw, 1.12rem);
+  line-height: 1.84;
+  font-size: clamp(1rem, 1.4vw, 1.1rem);
 }
 
 .tags {
-  margin-top: 1.6rem;
+  margin-top: 1.4rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 0.42rem;
 }
 
 .tags a {
   text-decoration: none;
   color: var(--ink);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-soft);
   border-radius: 999px;
-  padding: 0.34rem 0.64rem;
-  font-size: 0.84rem;
+  padding: 0.34rem 0.62rem;
+  font-size: 0.83rem;
 }
 
 .related {
   display: grid;
-  gap: 0.8rem;
+  gap: 0.75rem;
 }
 
 .related h2 {
@@ -150,19 +155,9 @@ h1 {
   gap: 1rem;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 980px) {
   .related-grid {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 700px) {
-  .post-main {
-    margin-top: 1.1rem;
-  }
-
-  .post-wrap {
-    border-radius: 22px;
   }
 }
 </style>

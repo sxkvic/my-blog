@@ -7,9 +7,10 @@ defineProps<{
 }>();
 
 const links = [
-  { href: '/', label: 'Home' },
-  { href: '/blog', label: 'Articles' },
-  { href: '/about', label: 'About' },
+  { href: '/', label: '首页' },
+  { href: '/blog', label: '文章' },
+  { href: '/games', label: '游戏仓' },
+  { href: '/about', label: '关于我' },
 ];
 </script>
 
@@ -17,7 +18,7 @@ const links = [
   <header class="site-header">
     <div class="header-wrap">
       <RouterLink to="/" class="brand">{{ siteName }}</RouterLink>
-      <nav class="site-nav" aria-label="Primary navigation">
+      <nav class="site-nav" aria-label="主导航">
         <RouterLink
           v-for="link in links"
           :key="link.href"
@@ -35,16 +36,16 @@ const links = [
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 50;
-  backdrop-filter: blur(10px);
-  background: color-mix(in srgb, var(--surface) 82%, white 18%);
-  border-bottom: 1px solid var(--line);
+  z-index: 60;
+  backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .header-wrap {
-  width: min(1120px, calc(100% - 2rem));
+  width: min(1180px, calc(100% - 2rem));
   margin: 0 auto;
-  min-height: 4.5rem;
+  min-height: 4.6rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -53,25 +54,26 @@ const links = [
 
 .brand {
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-size: 1.35rem;
   text-decoration: none;
   color: var(--ink-strong);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
 }
 
 .site-nav {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.45rem;
+  flex-wrap: wrap;
 }
 
 .nav-link {
   text-decoration: none;
   color: var(--ink-muted);
   border: 1px solid transparent;
-  padding: 0.45rem 0.8rem;
+  padding: 0.42rem 0.82rem;
   border-radius: 999px;
-  font-size: 0.92rem;
-  transition: all 0.22s ease;
+  font-size: 0.9rem;
+  transition: all 0.25s ease;
 }
 
 .nav-link:hover {
@@ -81,18 +83,23 @@ const links = [
 
 .nav-link.active {
   color: var(--ink-strong);
-  border-color: var(--brand-deep);
-  background: var(--brand-soft);
+  border-color: color-mix(in srgb, var(--accent-cyan) 70%, var(--line-strong));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-cyan) 30%, transparent);
+  background: color-mix(in srgb, var(--accent-cyan) 10%, var(--surface));
 }
 
-@media (max-width: 700px) {
+@media (max-width: 760px) {
+  .header-wrap {
+    min-height: 4rem;
+  }
+
   .brand {
-    font-size: 1.1rem;
+    font-size: 1.12rem;
   }
 
   .nav-link {
-    padding: 0.35rem 0.64rem;
-    font-size: 0.84rem;
+    font-size: 0.82rem;
+    padding: 0.32rem 0.64rem;
   }
 }
 </style>

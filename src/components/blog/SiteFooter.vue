@@ -1,8 +1,7 @@
 <script setup lang="ts">
-defineProps<{
-  siteName: string;
-}>();
+import { RouterLink } from 'vue-router';
 
+defineProps<{ siteName: string }>();
 const year = new Date().getFullYear();
 </script>
 
@@ -10,11 +9,11 @@ const year = new Date().getFullYear();
   <footer class="site-footer">
     <div class="footer-wrap">
       <p class="logo">{{ siteName }}</p>
-      <p class="copy">{{ year }} · Crafted for readers who build with intent.</p>
+      <p class="copy">{{ year }} · 生活、技术、游戏都值得被认真记录。</p>
       <div class="links">
-        <a href="#">X</a>
-        <a href="#">GitHub</a>
-        <a href="#">RSS</a>
+        <a href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
+        <a href="https://store.steampowered.com" target="_blank" rel="noreferrer">Steam</a>
+        <RouterLink to="/games">游戏仓</RouterLink>
       </div>
     </div>
   </footer>
@@ -22,15 +21,15 @@ const year = new Date().getFullYear();
 
 <style scoped>
 .site-footer {
-  margin-top: 3.5rem;
-  border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--sand) 70%, white 30%);
+  margin-top: 3.8rem;
+  border-top: 1px solid var(--line-soft);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 75%, transparent), transparent);
 }
 
 .footer-wrap {
-  width: min(1120px, calc(100% - 2rem));
+  width: min(1180px, calc(100% - 2rem));
   margin: 0 auto;
-  padding: 2rem 0 2.5rem;
+  padding: 2.2rem 0 2.8rem;
   display: grid;
   gap: 0.75rem;
 }
@@ -38,7 +37,7 @@ const year = new Date().getFullYear();
 .logo {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1.08rem;
 }
 
 .copy {
@@ -49,6 +48,7 @@ const year = new Date().getFullYear();
 .links {
   display: flex;
   gap: 0.9rem;
+  flex-wrap: wrap;
 }
 
 .links a {
@@ -57,6 +57,6 @@ const year = new Date().getFullYear();
 }
 
 .links a:hover {
-  color: var(--brand-deep);
+  color: var(--accent-cyan);
 }
 </style>
