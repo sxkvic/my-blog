@@ -120,3 +120,27 @@ sudo systemctl reload nginx
 - `JWT_SECRET`
 
 用户可在已登录状态下调用 `POST /api/auth/change-password` 修改自己的密码。
+
+## 傻瓜式发布（固定包名）
+
+约定每次上传的压缩包固定为：`/root/my-blog.zip`。
+
+仓库中的 `deploy.sh` 会自动完成：
+
+1. 备份数据库到 `/var/backups/my-blog`
+2. 解压 `/root/my-blog.zip`
+3. 同步代码到 `/var/www/my-blog`（保留 `.env` 和 `server/data`）
+4. 安装依赖并重启 PM2
+5. 健康检查 `http://127.0.0.1:3000/api/health`
+
+首次执行（仅一次）：
+
+```bash
+chmod +x /root/deploy.sh
+```
+
+之后每次发布只需要：
+
+```bash
+/root/deploy.sh
+```
