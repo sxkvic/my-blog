@@ -7,13 +7,13 @@ set -euo pipefail
 #
 # Data safety:
 # - backup DB before deploy
-# - never overwrite server/data/
+# - never overwrite backend/data/
 
 APP_DIR="/var/www/my-blog"
 ZIP_FILE="/root/my-blog.zip"
 TMP_DIR="/tmp/my-blog-release"
 PM2_NAME="neon-blog-api"
-DB_FILE="$APP_DIR/server/data/app.db"
+DB_FILE="$APP_DIR/backend/data/app.db"
 BACKUP_DIR="/var/backups/my-blog"
 HEALTH_URL="http://127.0.0.1:3000/api/health"
 
@@ -77,7 +77,7 @@ main() {
   rsync -av --delete \
     --exclude ".env" \
     --exclude "node_modules" \
-    --exclude "server/data/" \
+    --exclude "backend/data/" \
     "$SRC"/ "$APP_DIR"/
 
   log "4) Install dependencies"
@@ -88,7 +88,7 @@ main() {
   if pm2 describe "$PM2_NAME" >/dev/null 2>&1; then
     pm2 restart "$PM2_NAME" --update-env
   else
-    pm2 start server/src/index.js --name "$PM2_NAME" --cwd "$APP_DIR" --update-env
+    pm2 start backend/src/index.js --name "$PM2_NAME" --cwd "$APP_DIR" --update-env
   fi
   pm2 save
 

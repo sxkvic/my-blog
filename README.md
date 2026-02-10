@@ -1,7 +1,7 @@
 # my-blog
 
-前端：Vue 3 + Vite  
-后端：Node.js + Express（`server/`）
+前端：Vue 3 + Vite（`frontend/`）  
+后端：Node.js + Express（`backend/`）
 数据库：SQLite（单文件）
 
 ## 本地开发
@@ -70,7 +70,7 @@ npm run build
 4. 启动后端服务
 
 ```bash
-pm2 start server/src/index.js --name neon-blog-api
+pm2 start backend/src/index.js --name neon-blog-api
 pm2 save
 pm2 startup
 ```
@@ -89,12 +89,12 @@ sudo systemctl reload nginx
 
 ## 数据存储
 
-当前后端使用 SQLite 文件：`server/data/app.db`。
+当前后端使用 SQLite 文件：`backend/data/app.db`。
 
-- 如果存在旧的 `server/data/db.json`，后端首次启动时会自动尝试迁移数据。
+- 如果存在旧的 `backend/data/db.json`，后端首次启动时会自动尝试迁移数据。
 - 你不需要安装 MySQL，也不需要单独配置数据库服务。
 
-后续如果你要升级到 MySQL/PostgreSQL，主要替换点是 `server/src/db.js`。
+后续如果你要升级到 MySQL/PostgreSQL，主要替换点是 `backend/src/db.js`。
 
 ## 统一登录与数据隔离
 
@@ -129,7 +129,7 @@ sudo systemctl reload nginx
 
 1. 备份数据库到 `/var/backups/my-blog`
 2. 解压 `/root/my-blog.zip`
-3. 同步代码到 `/var/www/my-blog`（保留 `.env` 和 `server/data`）
+3. 同步代码到 `/var/www/my-blog`（保留 `.env` 和 `backend/data`）
 4. 安装依赖并重启 PM2
 5. 健康检查 `http://127.0.0.1:3000/api/health`
 

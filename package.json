@@ -3,11 +3,11 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "api": "node server/src/index.js",
-    "api:dev": "node --watch server/src/index.js",
+    "dev": "vite --config frontend/vite.config.ts",
+    "build": "vite build --config frontend/vite.config.ts",
+    "preview": "vite preview --config frontend/vite.config.ts",
+    "api": "node backend/src/index.js",
+    "api:dev": "node --watch backend/src/index.js",
     "dev:full": "npm-run-all --parallel api:dev dev"
   },
   "dependencies": {
